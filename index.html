@@ -422,11 +422,11 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 // ─── SUPABASE CONFIG ───
 // IMPORTANTE: substitui a SUPA_KEY pela tua anon public key completa
 // Vai a Supabase → Settings → API Keys → anon public → Copy
-const SUPA_URL = 'https://lmdbefnhxskttkevyruu.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZGJlZm5oeHNrdHRrZXZ5cnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjY5ODQsImV4cCI6MjA5MDkwMjk4NH0.N7Ty4_juD3BMaCvLzNoh0k6317ADyM1dEkQCPXPlD_4';
+var SUPA_URL = 'https://lmdbefnhxskttkevyruu.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZGJlZm5oeHNrdHRrZXZ5cnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjY5ODQsImV4cCI6MjA5MDkwMjk4NH0.N7Ty4_juD3BMaCvLzNoh0k6317ADyM1dEkQCPXPlD_4';
 
-const { createClient } = supabase;
-const db = createClient(SUPA_URL, SUPA_KEY);
+var { createClient } = supabase;
+var db = createClient(SUPA_URL, SUPA_KEY);
 
 // ─── ESTADO LOCAL ───
 let jogadores = [];
