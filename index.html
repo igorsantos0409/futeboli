@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -19,42 +20,42 @@
 body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var(--fundo); color: var(--texto); min-height: 100vh; padding-bottom: 90px; }
 
 #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-.login-box { background: var(--fundo2); border: 1px solid var(--borda); border-radius: 16px; padding: 32px 24px; width: 100%; max-width: 360px; }
-.login-logo { text-align: center; font-size: 36px; font-weight: 900; color: var(--verde-claro); margin-bottom: 4px; }
-.login-logo span { color: var(--laranja); }
-.login-sub { text-align: center; font-size: 13px; color: var(--texto2); margin-bottom: 28px; }
+.login-box { background: var(–fundo2); border: 1px solid var(–borda); border-radius: 16px; padding: 32px 24px; width: 100%; max-width: 360px; }
+.login-logo { text-align: center; font-size: 36px; font-weight: 900; color: var(–verde-claro); margin-bottom: 4px; }
+.login-logo span { color: var(–laranja); }
+.login-sub { text-align: center; font-size: 13px; color: var(–texto2); margin-bottom: 28px; }
 .login-err { border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; display: none; }
-.login-err.erro { background: #4a1a1a; color: var(--vermelho); }
+.login-err.erro { background: #4a1a1a; color: var(–vermelho); }
 .login-err.ok { background: #1a4a2a; color: #4ad68a; }
 
 #app-screen { display: none; }
-.nav { background: var(--fundo2); border-bottom: 1px solid var(--borda); display: flex; align-items: center; padding: 0 10px; position: sticky; top: 0; z-index: 100; height: 52px; gap: 4px; }
-.nav-logo { font-size: 15px; font-weight: 900; color: var(--verde-claro); white-space: nowrap; }
-.nav-logo span { color: var(--laranja); }
+.nav { background: var(–fundo2); border-bottom: 1px solid var(–borda); display: flex; align-items: center; padding: 0 10px; position: sticky; top: 0; z-index: 100; height: 52px; gap: 4px; }
+.nav-logo { font-size: 15px; font-weight: 900; color: var(–verde-claro); white-space: nowrap; }
+.nav-logo span { color: var(–laranja); }
 .nav-tabs { display: flex; gap: 1px; flex: 1; overflow-x: auto; scrollbar-width: none; }
 .nav-tabs::-webkit-scrollbar { display: none; }
-.tab { padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; color: var(--texto2); border: none; background: none; white-space: nowrap; font-weight: 500; }
-.tab.active { background: var(--verde-escuro); color: var(--verde-claro); font-weight: 700; }
-.btn-sair { padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(--texto2); border: 1px solid var(--borda); background: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.tab { padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 11px; color: var(–texto2); border: none; background: none; white-space: nowrap; font-weight: 500; }
+.tab.active { background: var(–verde-escuro); color: var(–verde-claro); font-weight: 700; }
+.btn-sair { padding: 4px 8px; border-radius: 6px; font-size: 11px; color: var(–texto2); border: 1px solid var(–borda); background: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
 
 .page { display: none; padding: 14px; max-width: 600px; margin: 0 auto; }
 .page.active { display: block; }
 
-.loading { text-align: center; padding: 32px; color: var(--texto2); font-size: 13px; }
-.spinner { width: 28px; height: 28px; border: 3px solid var(--borda); border-top-color: var(--verde-claro); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+.loading { text-align: center; padding: 32px; color: var(–texto2); font-size: 13px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(–borda); border-top-color: var(–verde-claro); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.card { background: var(--fundo2); border: 1px solid var(--borda); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-.card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--texto2); margin-bottom: 12px; }
+.card { background: var(–fundo2); border: 1px solid var(–borda); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+.card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(–texto2); margin-bottom: 12px; }
 
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-.stat-box { background: var(--fundo2); border: 1px solid var(--borda); border-radius: 10px; padding: 12px 8px; text-align: center; }
-.stat-val { font-size: 22px; font-weight: 700; color: var(--verde-claro); }
-.stat-lbl { font-size: 10px; color: var(--texto2); margin-top: 2px; }
+.stat-box { background: var(–fundo2); border: 1px solid var(–borda); border-radius: 10px; padding: 12px 8px; text-align: center; }
+.stat-val { font-size: 22px; font-weight: 700; color: var(–verde-claro); }
+.stat-lbl { font-size: 10px; color: var(–texto2); margin-top: 2px; }
 
-.jogador-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--borda); cursor: pointer; }
+.jogador-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(–borda); cursor: pointer; }
 .jogador-row:last-child { border-bottom: none; }
-.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--verde-escuro); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(--verde-claro); flex-shrink: 0; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(–verde-escuro); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: var(–verde-claro); flex-shrink: 0; }
 .jogador-info { flex: 1; min-width: 0; }
 .jogador-nome { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; user-select: none; flex-shrink: 0; }
@@ -62,120 +63,122 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 .badge-falta { background: #4a1a1a; color: #e07070; }
 .badge-subs { background: #2a3a1a; color: #8ab840; }
 
-.progress-bar { background: var(--fundo3); border-radius: 20px; height: 10px; overflow: hidden; margin: 10px 0; }
-.progress-fill { height: 100%; background: var(--verde-claro); border-radius: 20px; transition: width 0.4s; }
+.progress-bar { background: var(–fundo3); border-radius: 20px; height: 10px; overflow: hidden; margin: 10px 0; }
+.progress-fill { height: 100%; background: var(–verde-claro); border-radius: 20px; transition: width 0.4s; }
 
-.caixa-display { background: var(--fundo3); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 12px; }
-.caixa-val { font-size: 36px; font-weight: 800; color: var(--verde-claro); }
-.caixa-sub { font-size: 12px; color: var(--texto2); margin-top: 4px; }
-.mov-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--borda); font-size: 13px; }
+.caixa-display { background: var(–fundo3); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 12px; }
+.caixa-val { font-size: 36px; font-weight: 800; color: var(–verde-claro); }
+.caixa-sub { font-size: 12px; color: var(–texto2); margin-top: 4px; }
+.mov-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(–borda); font-size: 13px; }
 .mov-row:last-child { border-bottom: none; }
-.mov-val-pos { color: var(--verde-claro); font-weight: 700; margin-left: auto; white-space: nowrap; }
-.mov-val-neg { color: var(--vermelho); font-weight: 700; margin-left: auto; white-space: nowrap; }
-.mov-data { color: var(--texto2); font-size: 11px; }
+.mov-val-pos { color: var(–verde-claro); font-weight: 700; margin-left: auto; white-space: nowrap; }
+.mov-val-neg { color: var(–vermelho); font-weight: 700; margin-left: auto; white-space: nowrap; }
+.mov-data { color: var(–texto2); font-size: 11px; }
 
-.presenca-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--fundo3); border-radius: 8px; margin-bottom: 6px; }
+.presenca-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(–fundo3); border-radius: 8px; margin-bottom: 6px; }
 .presenca-nome { flex: 1; font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .toggle-btn { width: 40px; height: 22px; border-radius: 11px; border: none; cursor: pointer; position: relative; flex-shrink: 0; transition: background 0.2s; }
-.toggle-btn.presente { background: var(--verde-claro); }
-.toggle-btn.ausente { background: var(--borda); }
+.toggle-btn.presente { background: var(–verde-claro); }
+.toggle-btn.ausente { background: var(–borda); }
 .toggle-dot { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 3px; transition: left 0.2s; }
 .toggle-btn.presente .toggle-dot { left: 21px; }
 .toggle-btn.ausente .toggle-dot { left: 3px; }
 
-.equipa-bloco { background: var(--fundo3); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+.equipa-bloco { background: var(–fundo3); border-radius: 10px; padding: 12px; margin-bottom: 8px; }
 .equipa-titulo { font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot-a { background: var(--azul); }
-.dot-b { background: var(--laranja); }
+.dot-a { background: var(–azul); }
+.dot-b { background: var(–laranja); }
 .equipa-jogadores { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { padding: 4px 10px; border-radius: 20px; font-size: 12px; background: var(--fundo2); border: 1px solid var(--borda); }
+.chip { padding: 4px 10px; border-radius: 20px; font-size: 12px; background: var(–fundo2); border: 1px solid var(–borda); }
 
 /* SCORE LIVE */
 .placar { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-bottom: 16px; }
 .placar-equipa { text-align: center; }
-.placar-equipa-nome { font-size: 11px; font-weight: 700; color: var(--texto2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.placar-equipa-nome { font-size: 11px; font-weight: 700; color: var(–texto2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
 .placar-golos { font-size: 56px; font-weight: 900; line-height: 1; }
-.placar-golos-a { color: var(--azul); }
-.placar-golos-b { color: var(--laranja); }
-.placar-vs { font-size: 18px; font-weight: 700; color: var(--texto2); text-align: center; }
+.placar-golos-a { color: var(–azul); }
+.placar-golos-b { color: var(–laranja); }
+.placar-vs { font-size: 18px; font-weight: 700; color: var(–texto2); text-align: center; }
 
-.jogador-golo-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--fundo3); border-radius: 10px; margin-bottom: 6px; }
+.jogador-golo-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(–fundo3); border-radius: 10px; margin-bottom: 6px; }
 .golo-nome { flex: 1; font-size: 14px; font-weight: 500; }
 .golo-count { font-size: 22px; font-weight: 800; min-width: 28px; text-align: center; }
-.golo-count-a { color: var(--azul); }
-.golo-count-b { color: var(--laranja); }
+.golo-count-a { color: var(–azul); }
+.golo-count-b { color: var(–laranja); }
 .golo-btns { display: flex; align-items: center; gap: 8px; }
 .btn-golo { width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; font-size: 22px; display: flex; align-items: center; justify-content: center; font-weight: 700; transition: transform 0.1s; }
 .btn-golo:active { transform: scale(0.88); }
-.btn-mais { background: var(--verde); color: #fff; }
-.btn-menos { background: var(--fundo2); color: var(--texto2); border: 1px solid var(--borda); }
+.btn-mais { background: var(–verde); color: #fff; }
+.btn-menos { background: var(–fundo2); color: var(–texto2); border: 1px solid var(–borda); }
 
 /* RANKING */
-.rank-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.rank-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(–borda); }
 .rank-item:last-child { border-bottom: none; }
 .rank-pos { font-size: 16px; font-weight: 800; width: 28px; text-align: center; flex-shrink: 0; }
-.rank-pos-1 { color: var(--amarelo); }
+.rank-pos-1 { color: var(–amarelo); }
 .rank-pos-2 { color: #b0b8c0; }
 .rank-pos-3 { color: #c87040; }
 .rank-info { flex: 1; min-width: 0; }
 .rank-nome { font-size: 14px; font-weight: 600; }
-.rank-stats { font-size: 11px; color: var(--texto2); margin-top: 2px; }
-.rank-golos { font-size: 18px; font-weight: 800; color: var(--verde-claro); }
+.rank-stats { font-size: 11px; color: var(–texto2); margin-top: 2px; }
+.rank-golos { font-size: 18px; font-weight: 800; color: var(–verde-claro); }
 
 /* HISTÓRICO PARTIDAS */
-.partida-card { background: var(--fundo3); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+.partida-card { background: var(–fundo3); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
 .partida-resultado { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .partida-equipa { text-align: center; flex: 1; }
-.partida-equipa-nome { font-size: 11px; color: var(--texto2); margin-bottom: 4px; }
+.partida-equipa-nome { font-size: 11px; color: var(–texto2); margin-bottom: 4px; }
 .partida-score { font-size: 30px; font-weight: 900; }
-.partida-score-a { color: var(--azul); }
-.partida-score-b { color: var(--laranja); }
-.partida-vs { font-size: 13px; color: var(--texto2); font-weight: 700; padding: 0 8px; }
-.partida-data { font-size: 11px; color: var(--texto2); text-align: center; margin-bottom: 8px; }
-.partida-marcador { display: inline-block; background: var(--fundo2); border-radius: 12px; padding: 2px 8px; margin: 2px; font-size: 11px; }
+.partida-score-a { color: var(–azul); }
+.partida-score-b { color: var(–laranja); }
+.partida-vs { font-size: 13px; color: var(–texto2); font-weight: 700; padding: 0 8px; }
+.partida-data { font-size: 11px; color: var(–texto2); text-align: center; margin-bottom: 8px; }
+.partida-marcador { display: inline-block; background: var(–fundo2); border-radius: 12px; padding: 2px 8px; margin: 2px; font-size: 11px; }
 
 .btn { padding: 10px 16px; border-radius: 9px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; transition: opacity 0.15s; }
 .btn:active { opacity: 0.75; }
-.btn-prim { background: var(--verde); color: #fff; }
-.btn-laranja { background: var(--laranja); color: #fff; }
-.btn-sec { background: var(--fundo3); color: var(--texto); border: 1px solid var(--borda); }
-.btn-danger { background: #4a1a1a; color: var(--vermelho); }
+.btn-prim { background: var(–verde); color: #fff; }
+.btn-laranja { background: var(–laranja); color: #fff; }
+.btn-sec { background: var(–fundo3); color: var(–texto); border: 1px solid var(–borda); }
+.btn-danger { background: #4a1a1a; color: var(–vermelho); }
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 .btn-full { width: 100%; }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; align-items: flex-end; justify-content: center; }
 .modal-bg.open { display: flex; }
-.modal { background: var(--fundo2); border: 1px solid var(--borda); border-radius: 18px 18px 0 0; padding: 20px; width: 100%; max-width: 600px; padding-bottom: 40px; max-height: 88vh; overflow-y: auto; }
-.modal-handle { width: 40px; height: 4px; background: var(--borda); border-radius: 2px; margin: 0 auto 16px; }
+.modal { background: var(–fundo2); border: 1px solid var(–borda); border-radius: 18px 18px 0 0; padding: 20px; width: 100%; max-width: 600px; padding-bottom: 40px; max-height: 88vh; overflow-y: auto; }
+.modal-handle { width: 40px; height: 4px; background: var(–borda); border-radius: 2px; margin: 0 auto 16px; }
 .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
 
 .field { margin-bottom: 12px; }
-.field label { display: block; font-size: 12px; color: var(--texto2); margin-bottom: 5px; }
-.field input, .field select { width: 100%; background: var(--fundo3); border: 1px solid var(--borda); border-radius: 9px; padding: 10px 12px; color: var(--texto); font-size: 15px; outline: none; -webkit-appearance: none; }
-.field input:focus { border-color: var(--verde); }
+.field label { display: block; font-size: 12px; color: var(–texto2); margin-bottom: 5px; }
+.field input, .field select { width: 100%; background: var(–fundo3); border: 1px solid var(–borda); border-radius: 9px; padding: 10px 12px; color: var(–texto); font-size: 15px; outline: none; -webkit-appearance: none; }
+.field input:focus { border-color: var(–verde); }
 .estrelas-editor { display: flex; gap: 8px; margin-top: 4px; }
 .estrela-ed { font-size: 28px; cursor: pointer; user-select: none; }
-.estrela-ed.on { color: var(--amarelo); }
-.estrela-ed.off { color: var(--borda); }
+.estrela-ed.on { color: var(–amarelo); }
+.estrela-ed.off { color: var(–borda); }
 
-.divider { height: 1px; background: var(--borda); margin: 14px 0; }
-.section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--texto2); font-weight: 700; margin-bottom: 8px; }
-.empty { text-align: center; padding: 28px; color: var(--texto2); font-size: 13px; }
+.divider { height: 1px; background: var(–borda); margin: 14px 0; }
+.section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(–texto2); font-weight: 700; margin-bottom: 8px; }
+.empty { text-align: center; padding: 28px; color: var(–texto2); font-size: 13px; }
 .alert-box { background: #2a3a1a; border: 1px solid #4a6a2a; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #8ab840; margin-bottom: 12px; }
 
-.drag-jogador { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(--fundo3); border-radius: 8px; margin-bottom: 5px; border: 1px solid var(--borda); }
+.drag-jogador { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(–fundo3); border-radius: 8px; margin-bottom: 5px; border: 1px solid var(–borda); }
 .drag-nome { flex: 1; font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .btn-mover { padding: 3px 7px; border-radius: 6px; font-size: 11px; border: none; cursor: pointer; font-weight: 700; }
-.btn-mv-a { background: #102040; color: var(--azul); }
-.btn-mv-b { background: #3a1a00; color: var(--laranja); }
-.btn-mv-x { background: var(--fundo2); color: var(--texto2); border: 1px solid var(--borda); }
+.btn-mv-a { background: #102040; color: var(–azul); }
+.btn-mv-b { background: #3a1a00; color: var(–laranja); }
+.btn-mv-x { background: var(–fundo2); color: var(–texto2); border: 1px solid var(–borda); }
 </style>
+
 </head>
 <body>
 
 <!-- LOGIN -->
+
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -190,6 +193,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 </div>
 
 <!-- APP -->
+
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -206,6 +210,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
   </div>
 
   <!-- DASHBOARD -->
+
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -227,6 +232,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
   </div>
 
   <!-- JOGO -->
+
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -258,6 +264,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
   </div>
 
   <!-- SCORE LIVE -->
+
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -296,6 +303,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
   </div>
 
   <!-- JOGADORES -->
+
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -305,6 +313,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
   </div>
 
   <!-- CAIXA -->
+
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -330,12 +339,14 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
   </div>
 
   <!-- HISTÓRICO -->
+
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
+
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -351,6 +362,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 </div>
 
 <!-- MODAL JOGADOR -->
+
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -367,6 +379,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 </div>
 
 <!-- MODAL SUBS -->
+
 <div class="modal-bg" id="modal-subs">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -381,6 +394,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 </div>
 
 <!-- MODAL EQUIPAS -->
+
 <div class="modal-bg" id="modal-equipas">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -403,13 +417,27 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
     </div>
   </div>
 </div>
+<!-- MODAL ELIMINAR JOGO -->
+<div class="modal-bg" id="modal-eliminar">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 style="color:var(--vermelho)">Eliminar partida</h3>
+    <p style="font-size:13px;color:var(--texto2);margin-bottom:20px">Esta ação é irreversível. A partida e todas as estatísticas serão eliminadas permanentemente.</p>
+    <div style="background:var(--fundo3);border-radius:10px;padding:12px;margin-bottom:20px;font-size:13px;text-align:center" id="modal-eliminar-info"></div>
+    <div style="text-align:center;margin-bottom:16px"><span style="font-size:13px;color:var(--texto2)" id="eliminar-countdown"></span></div>
+    <div class="btn-row">
+      <button class="btn btn-danger btn-full" id="btn-confirmar-eliminar" onclick="confirmarEliminar()" disabled style="opacity:0.4">Eliminar partida</button>
+      <button class="btn btn-sec btn-full" onclick="fecharModal('modal-eliminar')">Cancelar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ─── SUPABASE CONFIG ───
 // IMPORTANTE: substitui a SUPA_KEY pela tua anon public key completa
 // Vai a Supabase → Settings → API Keys → anon public → Copy
 const SUPA_URL = 'https://lmdbefnhxskttkevyruu.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZGJlZm5oeHNrdHRrZXZ5cnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjY5ODQsImV4cCI6MjA5MDkwMjk4NH0.N7Ty4_juD3BMaCvLzNoh0k6317ADyM1dEkQCPXPlD_4';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZGJlZm5oeHNrdHRrZXZ5cnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM4MDc3NTMsImV4cCI6MjA1OTM4Mzc1M30.SUBSTITUI_AQUI_PELA_TUA_CHAVE_COMPLETA';
 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
@@ -890,7 +918,10 @@ async function carregarHistorico() {
     const marcStr = (p.marcadores||[]).map(m=>`<span class="partida-marcador">⚽ ${m.nome}${m.golos>1?` ×${m.golos}`:''}</span>`).join('');
     const vA = p.golos_a > p.golos_b, vB = p.golos_b > p.golos_a;
     html += `<div class="partida-card">
-      <div class="partida-data">${d}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <div class="partida-data" style="margin:0">${d}</div>
+        <button class="btn btn-danger btn-sm" onclick="abrirModalEliminar('${p.id}','${d}',${p.golos_a},${p.golos_b})" style="padding:3px 8px;font-size:11px">🗑 Eliminar</button>
+      </div>
       <div class="partida-resultado">
         <div class="partida-equipa">
           <div class="partida-equipa-nome" style="color:var(--azul)">Equipa A</div>
@@ -908,6 +939,63 @@ async function carregarHistorico() {
     </div>`;
   });
   document.getElementById('lista-historico').innerHTML = html;
+}
+
+let eliminaId = null;
+let eliminaTimer = null;
+
+function abrirModalEliminar(id, data, golosA, golosB) {
+  eliminaId = id;
+  document.getElementById('modal-eliminar-info').innerHTML = `<strong>${data}</strong><br>Equipa A <span style="color:var(--azul);font-weight:800">${golosA}</span> — <span style="color:var(--laranja);font-weight:800">${golosB}</span> Equipa B`;
+  const btn = document.getElementById('btn-confirmar-eliminar');
+  btn.disabled = true;
+  btn.style.opacity = '0.4';
+  let secs = 10;
+  document.getElementById('eliminar-countdown').textContent = `Podes eliminar daqui a ${secs} segundos...`;
+  if (eliminaTimer) clearInterval(eliminaTimer);
+  eliminaTimer = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(eliminaTimer);
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      document.getElementById('eliminar-countdown').textContent = 'Podes agora confirmar a eliminação.';
+    } else {
+      document.getElementById('eliminar-countdown').textContent = `Podes eliminar daqui a ${secs} segundos...`;
+    }
+  }, 1000);
+  document.getElementById('modal-eliminar').classList.add('open');
+}
+
+async function confirmarEliminar() {
+  if (!eliminaId) return;
+  const { data: partida } = await db.from('jogos_scoreboard').select('*').eq('id', eliminaId).single();
+  if (partida) {
+    const todosJogadores = [...(partida.equipa_a?.jogadores||[]), ...(partida.equipa_b?.jogadores||[])];
+    const marcadores = partida.marcadores || [];
+    const gA = partida.golos_a, gB = partida.golos_b;
+    const vitA = gA > gB, vitB = gB > gA, emp = gA === gB;
+    for (const j of todosJogadores) {
+      if (!j.id) continue;
+      const isA = (partida.equipa_a?.jogadores||[]).some(x => x.id === j.id);
+      const golosJ = marcadores.find(m => m.id === j.id)?.golos || 0;
+      const { data: est } = await db.from('estatisticas_jogadores').select('*').eq('jogador_id', j.id).maybeSingle();
+      if (est) {
+        await db.from('estatisticas_jogadores').update({
+          golos: Math.max(0, est.golos - golosJ),
+          jogos: Math.max(0, est.jogos - 1),
+          vitorias: Math.max(0, est.vitorias - (isA?(vitA?1:0):(vitB?1:0))),
+          derrotas: Math.max(0, est.derrotas - (isA?(vitB?1:0):(vitA?1:0))),
+          empates: Math.max(0, est.empates - (emp?1:0))
+        }).eq('jogador_id', j.id);
+      }
+    }
+  }
+  await db.from('jogos_scoreboard').delete().eq('id', eliminaId);
+  eliminaId = null;
+  fecharModal('modal-eliminar');
+  await carregarHistorico();
+  await carregarRanking();
 }
 
 // ─── RANKING ───
@@ -956,5 +1044,6 @@ async function carregarRanking() {
   document.getElementById('r-marc').innerHTML = marcHtml;
 }
 </script>
+
 </body>
 </html>
