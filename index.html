@@ -182,7 +182,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
     <div class="login-sub">Gestão do grupo de futebol</div>
     <div class="login-err" id="login-err"></div>
     <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="o teu email" autocomplete="email"></div>
-    <div class="field"><label>Password</label><input type="password" id="login-pass" placeholder="a tua password" autocomplete="current-password"></div>
+    <div class="field"><label>Password</label><div style="position:relative"><input type="password" id="login-pass" placeholder="a tua password" autocomplete="current-password" style="padding-right:44px"><button onclick="togglePass()" type="button" id="btn-pass-toggle" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--texto2);padding:0;line-height:1">&#128065;</button></div></div>
     <button class="btn btn-prim btn-full" onclick="fazerLogin()" style="margin-top:4px">Entrar</button>
 
   </div>
@@ -463,6 +463,7 @@ async function iniciarApp() {
 
 db.auth.getSession().then(({ data }) => { if (data.session) iniciarApp(); });
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+function togglePass() { const inp = document.getElementById("login-pass"); const btn = document.getElementById("btn-pass-toggle"); if (inp.type === "password") { inp.type = "text"; btn.textContent = "🙈"; } else { inp.type = "password"; btn.textContent = "👁"; } }
 
 // ─── DB HELPERS ───
 async function carregarJogadores() {
