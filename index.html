@@ -807,14 +807,17 @@ async function carregarRanking(){
 
 // ── STATS ──
 async function carregarStats(){
-  // Assiduidade
-  const{data:jogos}=await db.from('jogos').select('presentes').order('criado_em',{ascending:false}).limit(20);
-  const totalJogos=jogos?.length||0;
+  // Assiduidade — baseada nos jogos do scoreboard (sincronizada com eliminações)
+  const{data:partScoreboard}=await db.from('jogos_scoreboard').select('equipa_a,equipa_b').order('criado_em',{ascending:false}).limit(50);
+  const totalJogos=partScoreboard?.length||0;
   let assidHtml='';
-  if(totalJogos===0){assidHtml='<div class="empty">Sem jogos registados.</div>';}
+  if(totalJogos===0){assidHtml='<div class="empty">Sem partidas registadas.</div>';}
   else{
     const contagem={};
-    (jogos||[]).forEach(j=>(j.presentes||[]).forEach(n=>{contagem[n]=(contagem[n]||0)+1;}));
+    (partScoreboard||[]).forEach(p=>{
+      const todosNomes=[...(p.equipa_a?.jogadores||[]),...(p.equipa_b?.jogadores||[])].map(j=>j.nome);
+      todosNomes.forEach(n=>{contagem[n]=(contagem[n]||0)+1;});
+    });
     const sorted=Object.entries(contagem).sort((a,b)=>b[1]-a[1]);
     sorted.forEach(([nome,count])=>{const pct=Math.round((count/totalJogos)*100);assidHtml+=`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${nome}</span><span style="color:var(--texto2)">${count}/${totalJogos} (${pct}%)</span></div><div class="assid-bar"><div class="assid-fill" style="width:${pct}%"></div></div></div>`;});
   }
