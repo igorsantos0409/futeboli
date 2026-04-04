@@ -184,10 +184,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
     <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="o teu email" autocomplete="email"></div>
     <div class="field"><label>Password</label><input type="password" id="login-pass" placeholder="a tua password" autocomplete="current-password"></div>
     <button class="btn btn-prim btn-full" onclick="fazerLogin()" style="margin-top:4px">Entrar</button>
-    <div style="text-align:center;margin-top:16px">
-      <span style="font-size:12px;color:var(--texto2)">Primeira vez? </span>
-      <span style="font-size:12px;color:var(--verde-claro);cursor:pointer;text-decoration:underline" onclick="fazerRegisto()">Criar conta</span>
-    </div>
+
   </div>
 </div>
 
@@ -411,7 +408,7 @@ body { font-family: -apple-system, 'Helvetica Neue', sans-serif; background: var
 // IMPORTANTE: substitui a SUPA_KEY pela tua anon public key completa
 // Vai a Supabase → Settings → API Keys → anon public → Copy
 const SUPA_URL = 'https://lmdbefnhxskttkevyruu.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZGJlZm5oeHNrdHRrZXZ5cnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzMjY5ODQsImV4cCI6MjA5MDkwMjk4NH0.N7Ty4_juD3BMaCvLzNoh0k6317ADyM1dEkQCPXPlD_4';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtZGJlZm5oeHNrdHRrZXZ5cnV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM4MDc3NTMsImV4cCI6MjA1OTM4Mzc1M30.SUBSTITUI_AQUI_PELA_TUA_CHAVE_COMPLETA';
 
 const { createClient } = supabase;
 const db = createClient(SUPA_URL, SUPA_KEY);
