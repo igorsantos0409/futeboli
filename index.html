@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -163,7 +162,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 <body>
 
 <!-- LOGIN -->
-
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -182,7 +180,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- APP -->
-
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -200,7 +197,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- DASHBOARD -->
-
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -227,7 +223,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGO -->
-
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -259,7 +254,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- SCORE LIVE -->
-
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -298,7 +292,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGADORES -->
-
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -308,7 +301,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- CAIXA -->
-
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -340,14 +332,12 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- HISTÓRICO -->
-
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
-
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -362,7 +352,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- STATS -->
-
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
@@ -387,7 +376,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAIS -->
-
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -936,6 +924,5 @@ async function exportarDados(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fut5-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
 </script>
-
 </body>
 </html>
