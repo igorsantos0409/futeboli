@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -162,6 +163,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 <body>
 
 <!-- LOGIN -->
+
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -180,6 +182,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- APP -->
+
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -197,6 +200,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- DASHBOARD -->
+
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -223,6 +227,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGO -->
+
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -245,6 +250,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
       <p style="font-size:13px;color:var(--texto2);margin-bottom:12px">Sorteia equipas equilibradas pelas classificações dos presentes.</p>
       <button class="btn btn-prim btn-full" onclick="sortearEquipas()">⚽ Sortear equipas</button>
       <div id="eq-resultado" style="margin-top:12px"></div>
+      <button id="btn-partilhar-equipas" class="btn btn-sec btn-full" onclick="partilharEquipas()" style="display:none;margin-top:10px">📤 Partilhar equipas</button>
     </div>
     <div class="card">
       <div class="card-title">Fechar jogo</div>
@@ -254,6 +260,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- SCORE LIVE -->
+
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -292,6 +299,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGADORES -->
+
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -301,6 +309,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- CAIXA -->
+
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -332,12 +341,14 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- HISTÓRICO -->
+
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
+
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -352,6 +363,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- STATS -->
+
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
@@ -376,6 +388,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAIS -->
+
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -603,6 +616,7 @@ function sortearEquipas() {
   partida.equipaA=eqA;partida.equipaB=eqB;
   const fmt=(eq,cls,label)=>`<div class="equipa-bloco"><div class="equipa-titulo"><div class="dot ${cls}"></div>${label} — Força: ${eq.reduce((a,j)=>a+(j.rating||3),0)}</div><div class="equipa-jogadores">${eq.map(j=>`<div class="chip">${j.nome}</div>`).join('')}</div></div>`;
   document.getElementById('eq-resultado').innerHTML=fmt(eqA,'dot-a','Equipa A')+fmt(eqB,'dot-b','Equipa B');
+  document.getElementById('btn-partilhar-equipas').style.display='block';
 }
 async function fecharJogo() {
   if(!jogoAtual.data){alert('Configura a data do jogo primeiro.');return;}
@@ -837,6 +851,64 @@ async function carregarStats(){
   document.getElementById('stats-parceiros').innerHTML=parcHtml;
 }
 
+
+// ── PARTILHA EQUIPAS ──
+function partilharEquipas(){
+  if(!partida.equipaA||partida.equipaA.length===0){alert('Sorteia as equipas primeiro.');return;}
+  const eqA=partida.equipaA, eqB=partida.equipaB;
+  const fA=eqA.reduce((a,j)=>a+(j.rating||3),0), fB=eqB.reduce((a,j)=>a+(j.rating||3),0);
+  const linhasA=eqA.length, linhasB=eqB.length;
+  const altTotal=80+40+40+(linhasA*36)+20+40+(linhasB*36)+40;
+  const canvas=document.getElementById('share-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=600; canvas.height=altTotal;
+  const desenhar=()=>{
+    ctx.clearRect(0,0,600,altTotal);
+    ctx.fillStyle='#0d1f15'; ctx.fillRect(0,0,600,altTotal);
+    ctx.fillStyle='#142a1c'; ctx.beginPath(); ctx.roundRect(20,20,560,altTotal-40,16); ctx.fill();
+    // Título
+    ctx.fillStyle='#25a865'; ctx.font='bold 22px system-ui'; ctx.textAlign='center';
+    ctx.fillText('Fut5 — Equipas de hoje',300,58);
+    const d=jogoAtual.data?new Date(jogoAtual.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'}):'';
+    ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.fillText(d,300,78);
+    // Linha
+    ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,90); ctx.lineTo(560,90); ctx.stroke();
+    // Equipa A
+    let y=115;
+    ctx.fillStyle='#3080d0'; ctx.font='bold 14px system-ui'; ctx.textAlign='left'; ctx.fillText('● EQUIPA A',40,y);
+    ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText('Força: '+fA,560,y);
+    y+=14;
+    eqA.forEach(j=>{
+      y+=8;
+      ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
+      ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
+      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
+      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
+      y+=28;
+    });
+    y+=16;
+    ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(560,y); ctx.stroke();
+    y+=20;
+    ctx.fillStyle='#f07020'; ctx.font='bold 14px system-ui'; ctx.textAlign='left'; ctx.fillText('● EQUIPA B',40,y);
+    ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText('Força: '+fB,560,y);
+    y+=14;
+    eqB.forEach(j=>{
+      y+=8;
+      ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
+      ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
+      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
+      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
+      y+=28;
+    });
+    y+=20;
+    ctx.fillStyle='#2a4a35'; ctx.font='11px system-ui'; ctx.textAlign='center'; ctx.fillText('Fut5 Manager',300,y+10);
+  };
+  desenhar();
+  const img=canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
+
 // ── PARTILHA ──
 function abrirShare(dados){sharePartidaData=dados;abrirShareModal();}
 function abrirShareModal(){
@@ -927,5 +999,6 @@ async function exportarDados(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fut5-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
 </script>
+
 </body>
 </html>
