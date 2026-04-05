@@ -868,7 +868,7 @@ function partilharEquipas(){
     ctx.fillStyle='#142a1c'; ctx.beginPath(); ctx.roundRect(20,20,560,altTotal-40,16); ctx.fill();
     // Título
     ctx.fillStyle='#25a865'; ctx.font='bold 22px system-ui'; ctx.textAlign='center';
-    ctx.fillText('Fut5 — Equipas de hoje',300,58);
+    ctx.fillText('Futeboli — Equipas de hoje',300,58);
     const d=jogoAtual.data?new Date(jogoAtual.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'}):'';
     ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.fillText(d,300,78);
     // Linha
@@ -882,7 +882,7 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
+      
       ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
       y+=28;
     });
@@ -896,7 +896,7 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
+    
       ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
       y+=28;
     });
@@ -921,7 +921,7 @@ function abrirShareModal(){
   ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,380);
   ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,340,16);ctx.fill();
   // Título
-  ctx.fillStyle='#25a865';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText('Fut5',300,70);
+  ctx.fillStyle='#25a865';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText('Futeboli',300,70);
   // Data
   ctx.fillStyle='#8ab89a';ctx.font='14px system-ui';
   const d=new Date(p.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
