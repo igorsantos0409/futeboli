@@ -989,7 +989,7 @@ function partilharEquipas(){
     ctx.fillStyle='#142a1c'; ctx.beginPath(); ctx.roundRect(20,20,560,altTotal-40,16); ctx.fill();
     // Título
     ctx.fillStyle='#25a865'; ctx.font='bold 22px system-ui'; ctx.textAlign='center';
-    ctx.fillText('Futeboli — Equipas de hoje',300,58);
+    ctx.fillText('FUTEBOLI — Equipas de hoje',300,58);
     const d=jogoAtual.data?new Date(jogoAtual.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'}):'';
     ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.fillText(d,300,78);
     // Linha
@@ -1003,7 +1003,6 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      
       y+=28;
     });
     y+=16;
@@ -1016,7 +1015,6 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      
       y+=28;
     });
     y+=20;
@@ -1075,7 +1073,7 @@ async function partilharImagem(){
   try{
     canvas.toBlob(async blob=>{
       if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],'resultado.png',{type:'image/png'})]})){
-        await navigator.share({files:[new File([blob],'resultado.png',{type:'image/png'})],title:'Resultado Fut5'});
+        await navigator.share({files:[new File([blob],'resultado.png',{type:'image/png'})],title:'Resultado FUTEBOLI'});
       }else{
         const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='resultado-fut5.png';a.click();
       }
@@ -1106,7 +1104,7 @@ function agendarNotificacaoSegunda(){
   proxSegunda.setHours(9,0,0,0);
   const msAte=proxSegunda-agora;
   setTimeout(()=>{
-    if(Notification.permission==='granted'){new Notification('⚽ Futeboli — Jogo hoje!',{body:'Não te esqueças do jogo de futebol esta semana!',icon:'/favicon.ico'});}
+    if(Notification.permission==='granted'){new Notification('⚽ FUTEBOLI — Jogo hoje!',{body:'Não te esqueças do jogo de futebol esta semana!',icon:'/favicon.ico'});}
     agendarNotificacaoSegunda();
   },msAte);
 }
