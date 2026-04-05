@@ -682,8 +682,7 @@ function ajGolo(key,lado,delta) {
 }
 function resetarPartida(){if(!confirm('Reiniciar os golos?'))return;partida.golosA=0;partida.golosB=0;Object.keys(partida.marc).forEach(k=>partida.marc[k]=0);renderScoreLive();}
 async function terminarPartida() {
-  if(!confirm(`Terminar partida?
-Equipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
+  if(!confirm(`Terminar partida?\nEquipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
   const marcArr=[];
   [...partida.equipaA,...partida.equipaB].forEach(j=>{const key=j.id||j.nome,g=partida.marc[key]||0;if(g>0)marcArr.push({nome:j.nome,id:j.id||null,golos:g});});
   const dataJogo=jogoAtual.data||new Date().toISOString().split('T')[0];
@@ -698,10 +697,12 @@ Equipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
   }
   const gA=partida.golosA,gB=partida.golosB,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
   for(const j of [...partida.equipaA,...partida.equipaB]){
+    const isA=j.id
+      ? partida.equipaA.some(x=>x.id===j.id)
+      : partida.equipaA.some(x=>!x.id&&x.nome===j.nome);
     const key=j.id||j.nome;
-    const isA=partida.equipaA.some(x=>(j.id?x.id===j.id:x.nome===j.nome));
     const golosJ=partida.marc[key]||0;
-    const statsUpdate={
+    const updateStats={
       golos:golosJ,
       jogos:1,
       vitorias:isA?(vitA?1:0):(vitB?1:0),
@@ -713,27 +714,27 @@ Equipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
       const {data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
       if(est){
         await db.from('estatisticas_jogadores').update({
-          golos:(est.golos||0)+statsUpdate.golos,
-          jogos:(est.jogos||0)+statsUpdate.jogos,
-          vitorias:(est.vitorias||0)+statsUpdate.vitorias,
-          derrotas:(est.derrotas||0)+statsUpdate.derrotas,
-          empates:(est.empates||0)+statsUpdate.empates
+          golos:(est.golos||0)+updateStats.golos,
+          jogos:(est.jogos||0)+updateStats.jogos,
+          vitorias:(est.vitorias||0)+updateStats.vitorias,
+          derrotas:(est.derrotas||0)+updateStats.derrotas,
+          empates:(est.empates||0)+updateStats.empates
         }).eq('jogador_id',j.id);
       } else {
-        await db.from('estatisticas_jogadores').insert({jogador_id:j.id,...statsUpdate});
+        await db.from('estatisticas_jogadores').insert({jogador_id:j.id,...updateStats});
       }
     } else {
       const sub=substitutosConhecidos.find(s=>s.nome===j.nome);
       if(sub){
         await db.from('substitutos').update({
-          golos:(sub.golos||0)+statsUpdate.golos,
-          jogos:(sub.jogos||0)+statsUpdate.jogos,
-          vitorias:(sub.vitorias||0)+statsUpdate.vitorias,
-          derrotas:(sub.derrotas||0)+statsUpdate.derrotas,
-          empates:(sub.empates||0)+statsUpdate.empates
+          golos:(sub.golos||0)+updateStats.golos,
+          jogos:(sub.jogos||0)+updateStats.jogos,
+          vitorias:(sub.vitorias||0)+updateStats.vitorias,
+          derrotas:(sub.derrotas||0)+updateStats.derrotas,
+          empates:(sub.empates||0)+updateStats.empates
         }).eq('id',sub.id);
       } else {
-        await db.from('substitutos').insert({nome:j.nome,rating:j.rating||3,...statsUpdate});
+        await db.from('substitutos').insert({nome:j.nome,rating:j.rating||3,...updateStats});
       }
     }
   }
@@ -745,9 +746,7 @@ Equipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
   partida={equipaA:[],equipaB:[],golosA:0,golosB:0,marc:{}};
   await renderDash();
   // Perguntar se quer partilhar
-  if(confirm('Partida guardada! ✓
-
-Queres partilhar o resultado?')) abrirShareModal();
+  if(confirm('Partida guardada! ✓\n\nQueres partilhar o resultado?')) abrirShareModal();
 }
 
 // ── JOGADORES ──
@@ -793,7 +792,15 @@ async function guardarSubs(){
   // Guardar ou atualizar substituto conhecido
   const existente=substitutosConhecidos.find(s=>s.nome===nome);
   if(!existente){
-    await db.from('substitutos').insert({nome,rating:subStars,golos:0,jogos:0,vitorias:0,derrotas:0,empates:0});
+    await db.from('substitutos').insert({
+      nome,
+      rating:subStars,
+      jogos:0,
+      golos:0,
+      vitorias:0,
+      derrotas:0,
+      empates:0
+    });
   } else if(existente.rating!==subStars){
     await db.from('substitutos').update({rating:subStars}).eq('id',existente.id);
   }
