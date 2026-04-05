@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -163,7 +162,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 <body>
 
 <!-- LOGIN -->
-
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -182,7 +180,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- APP -->
-
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -200,7 +197,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- DASHBOARD -->
-
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -227,7 +223,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGO -->
-
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -260,7 +255,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- SCORE LIVE -->
-
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -299,7 +293,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGADORES -->
-
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -309,7 +302,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- CAIXA -->
-
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -341,14 +333,12 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- HISTÓRICO -->
-
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
-
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -363,7 +353,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- STATS -->
-
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
@@ -388,7 +377,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAIS -->
-
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -408,7 +396,11 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>Adicionar substituto</h3>
-    <div class="field"><label>Nome</label><input type="text" id="ms-nome" placeholder="Nome do substituto" autocomplete="off"></div>
+    <div class="field">
+      <label>Substitutos conhecidos</label>
+      <div id="subs-sugestoes" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+    </div>
+    <div class="field"><label>Nome (novo substituto)</label><input type="text" id="ms-nome" placeholder="Nome do substituto" autocomplete="off"></div>
     <div class="field"><label>Classificação</label><div class="estrelas-editor" id="ms-stars"></div></div>
     <div class="btn-row">
       <button class="btn btn-prim" onclick="guardarSubs()">Adicionar</button>
@@ -468,7 +460,7 @@ var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 var { createClient } = supabase;
 var db = createClient(SUPA_URL, SUPA_KEY);
 
-let jogadores = [], movimentos = [];
+let jogadores = [], movimentos = [], substitutosConhecidos = [];
 let jogoAtual = { data: new Date().toISOString().split('T')[0], presencas: {}, subs: [] };
 let partida = { equipaA: [], equipaB: [], golosA: 0, golosB: 0, marc: {} };
 let cfg = { a: [], b: [], sem: [] };
@@ -505,7 +497,7 @@ async function sair() {
 async function iniciarApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  await Promise.all([carregarJogadores(), carregarMovimentos()]);
+  await Promise.all([carregarJogadores(), carregarMovimentos(), carregarSubstitutos()]);
   renderDash(); renderJogo(); renderJogadores(); renderCaixa();
   verificarNotificacoes();
 }
@@ -525,6 +517,10 @@ async function carregarJogadores() {
 async function carregarMovimentos() {
   const { data } = await db.from('caixa').select('*').order('criado_em', { ascending: false }).limit(50);
   if (data) movimentos = data;
+}
+async function carregarSubstitutos() {
+  const { data } = await db.from('substitutos').select('*').order('nome');
+  if (data) substitutosConhecidos = data;
 }
 function calcCaixa() { return movimentos.reduce((s,m) => s+parseFloat(m.valor), 0); }
 
@@ -567,11 +563,17 @@ async function renderDash() {
   document.getElementById('d-alerta').innerHTML = caixa>=150 ? '<div class="alert-box">✓ Caixa com 150€! Ninguém paga mensalidade este mês.</div>' : '';
   db.from('jogos_scoreboard').select('*',{count:'exact',head:true}).then(({count})=>{ document.getElementById('d-jogos').textContent=count||0; });
   // MVP
-  const { data: stats } = await db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1);
+  const[{data:fixosMvp},{data:subsMvp}]=await Promise.all([
+    db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1),
+    db.from('substitutos').select('*').order('golos',{ascending:false}).limit(1)
+  ]);
   const mvpBox = document.getElementById('d-mvp');
-  if (stats && stats.length>0 && stats[0].golos>0) {
-    const mvp = stats[0];
-    mvpBox.innerHTML = `<div class="mvp-box"><div class="mvp-icon">🏅</div><div class="mvp-info"><div class="mvp-titulo">MVP — Melhor marcador</div><div class="mvp-nome">${mvp.jogadores?.nome||'?'}</div><div class="mvp-sub">${mvp.golos} golos · ${mvp.vitorias}V ${mvp.empates}E ${mvp.derrotas}D</div></div><button class="btn btn-sec btn-sm" onclick="partilharMVP()" style="flex-shrink:0;padding:6px 10px">📤</button></div>`;
+  let mvpFinal=null,mvpNome='',mvpIsSub=false;
+  if((subsMvp?.[0]?.golos||0)>(fixosMvp?.[0]?.golos||0)){mvpFinal=subsMvp[0];mvpNome=subsMvp[0].nome;mvpIsSub=true;}
+  else if(fixosMvp?.[0]?.golos>0){mvpFinal=fixosMvp[0];mvpNome=fixosMvp[0].jogadores?.nome||'?';}
+  if(mvpFinal){
+    const badge=mvpIsSub?'<span style="font-size:10px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:1px 6px;margin-left:6px">sub</span>':'';
+    mvpBox.innerHTML=`<div class="mvp-box"><div class="mvp-icon">🏅</div><div class="mvp-info"><div class="mvp-titulo">MVP — Melhor marcador</div><div class="mvp-nome">${mvpNome}${badge}</div><div class="mvp-sub">${mvpFinal.golos} golos · ${mvpFinal.vitorias}V ${mvpFinal.empates}E ${mvpFinal.derrotas}D</div></div><button class="btn btn-sec btn-sm" onclick="partilharMVP()" style="flex-shrink:0;padding:6px 10px">📤</button></div>`;
   } else { mvpBox.innerHTML=''; }
   let html=''; jogadores.length===0 && (html='<div class="empty">Sem jogadores</div>');
   jogadores.forEach(j => { html+=`<div class="jogador-row" style="cursor:default"><div class="avatar">${iniciais(j.nome)}</div><div class="jogador-info"><div class="jogador-nome">${j.nome}</div></div><div class="badge ${j.pago_mes?'badge-pago':'badge-falta'}" onclick="togglePago('${j.id}',${!j.pago_mes})">${j.pago_mes?'✓ Pago':'✗ Pendente'}</div></div>`; });
@@ -727,8 +729,40 @@ async function guardarJogador(){const nome=document.getElementById('mj-nome').va
 async function eliminarJogador(){const id=document.getElementById('mj-id').value;if(!id||!confirm('Eliminar este jogador?'))return;await db.from('jogadores').delete().eq('id',id);fecharModal('modal-jogador');await carregarJogadores();renderJogadores();renderDash();}
 
 // ── SUBS ──
-function abrirModalSubs(){subStars=3;document.getElementById('ms-nome').value='';buildStars('ms-stars',subStars,v=>{subStars=v;buildStars('ms-stars',subStars,arguments.callee);});document.getElementById('modal-subs').classList.add('open');}
-function guardarSubs(){const nome=document.getElementById('ms-nome').value.trim();if(!nome){alert('Insere o nome.');return;}jogoAtual.subs.push({nome,rating:subStars});fecharModal('modal-subs');renderJogo();}
+function abrirModalSubs(){
+  subStars=3;
+  document.getElementById('ms-nome').value='';
+  buildStars('ms-stars',subStars,v=>{subStars=v;buildStars('ms-stars',subStars,arguments.callee);});
+  // Mostrar sugestões — filtrar os que já estão no jogo
+  const jaNoJogo=(jogoAtual.subs||[]).map(s=>s.nome);
+  const disponiveis=substitutosConhecidos.filter(s=>!jaNoJogo.includes(s.nome));
+  const container=document.getElementById('subs-sugestoes');
+  if(disponiveis.length===0){
+    container.innerHTML='<span style="font-size:12px;color:var(--texto2)">Nenhum substituto conhecido ainda.</span>';
+  } else {
+    container.innerHTML=disponiveis.map(s=>`<button class="chip" onclick="selecionarSubs('${s.nome}',${s.rating})" style="cursor:pointer;background:var(--fundo3);border:1px solid var(--borda);padding:6px 12px;font-size:13px">${s.nome}</button>`).join('');
+  }
+  document.getElementById('modal-subs').classList.add('open');
+}
+function selecionarSubs(nome, rating){
+  document.getElementById('ms-nome').value=nome;
+  subStars=rating;
+  buildStars('ms-stars',subStars,v=>{subStars=v;buildStars('ms-stars',subStars,arguments.callee);});
+}
+async function guardarSubs(){
+  const nome=document.getElementById('ms-nome').value.trim();
+  if(!nome){alert('Insere o nome.');return;}
+  jogoAtual.subs.push({nome,rating:subStars});
+  // Guardar ou atualizar substituto conhecido
+  const existente=substitutosConhecidos.find(s=>s.nome===nome);
+  if(!existente){
+    await db.from('substitutos').insert({nome,rating:subStars});
+  } else if(existente.rating!==subStars){
+    await db.from('substitutos').update({rating:subStars}).eq('id',existente.id);
+  }
+  await carregarSubstitutos();
+  fecharModal('modal-subs');renderJogo();
+}
 
 // ── CAIXA ──
 function renderCaixa() {
@@ -804,7 +838,18 @@ async function confirmarEliminar(){
     // Reverter estatísticas dos jogadores
     const todos=[...(p.equipa_a?.jogadores||[]),...(p.equipa_b?.jogadores||[])];
     const marc=p.marcadores||[],gA=p.golos_a,gB=p.golos_b,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
-    for(const j of todos){if(!j.id)continue;const isA=(p.equipa_a?.jogadores||[]).some(x=>x.id===j.id),golosJ=marc.find(m=>m.id===j.id)?.golos||0;const{data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();if(est){await db.from('estatisticas_jogadores').update({golos:Math.max(0,est.golos-golosJ),jogos:Math.max(0,est.jogos-1),vitorias:Math.max(0,est.vitorias-(isA?(vitA?1:0):(vitB?1:0))),derrotas:Math.max(0,est.derrotas-(isA?(vitB?1:0):(vitA?1:0))),empates:Math.max(0,est.empates-(emp?1:0))}).eq('jogador_id',j.id);}}
+    for(const j of todos){
+      const golosJ=marc.find(m=>m.id===j.id||m.nome===j.nome)?.golos||0;
+      const isA=(p.equipa_a?.jogadores||[]).some(x=>x.id===j.id||x.nome===j.nome);
+      if(j.id){
+        const{data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
+        if(est){await db.from('estatisticas_jogadores').update({golos:Math.max(0,est.golos-golosJ),jogos:Math.max(0,est.jogos-1),vitorias:Math.max(0,est.vitorias-(isA?(vitA?1:0):(vitB?1:0))),derrotas:Math.max(0,est.derrotas-(isA?(vitB?1:0):(vitA?1:0))),empates:Math.max(0,est.empates-(emp?1:0))}).eq('jogador_id',j.id);}
+      } else {
+        const sub=substitutosConhecidos.find(s=>s.nome===j.nome);
+        if(sub){await db.from('substitutos').update({golos:Math.max(0,sub.golos-golosJ),jogos:Math.max(0,sub.jogos-1),vitorias:Math.max(0,sub.vitorias-(isA?(vitA?1:0):(vitB?1:0))),derrotas:Math.max(0,sub.derrotas-(isA?(vitB?1:0):(vitA?1:0))),empates:Math.max(0,sub.empates-(emp?1:0))}).eq('id',sub.id);}
+      }
+    }
+    await carregarSubstitutos();
     // Reverter movimento da caixa referente aos substitutos desta partida
     const{data:movs}=await db.from('caixa').select('*').like('descricao',`%partida:${eliminaId}%`);
     if(movs&&movs.length>0){
@@ -822,16 +867,32 @@ async function confirmarEliminar(){
 async function carregarRanking(){
   document.getElementById('r-class').innerHTML='<div class="loading"><div class="spinner"></div></div>';
   document.getElementById('r-marc').innerHTML='<div class="loading"><div class="spinner"></div></div>';
-  const{data}=await db.from('estatisticas_jogadores').select('*, jogadores(nome)');
-  if(!data||data.length===0){document.getElementById('r-class').innerHTML='<div class="empty">Sem dados ainda.</div>';document.getElementById('r-marc').innerHTML='<div class="empty">Sem golos.</div>';return;}
-  const comPts=data.map(s=>({...s,pontos:s.vitorias*3+s.empates})).sort((a,b)=>b.pontos-a.pontos||b.golos-a.golos);
+  const[{data:fixos},{data:subs}]=await Promise.all([
+    db.from('estatisticas_jogadores').select('*, jogadores(nome)'),
+    db.from('substitutos').select('*').gt('jogos',0)
+  ]);
+  // Unificar fixos e substitutos
+  const todos=[
+    ...(fixos||[]).map(s=>({...s,nome:s.jogadores?.nome||'?',isSub:false})),
+    ...(subs||[]).map(s=>({...s,jogador_id:null,nome:s.nome,isSub:true}))
+  ];
+  if(todos.length===0){document.getElementById('r-class').innerHTML='<div class="empty">Sem dados ainda.</div>';document.getElementById('r-marc').innerHTML='<div class="empty">Sem golos.</div>';return;}
+  const comPts=todos.map(s=>({...s,pontos:s.vitorias*3+s.empates})).sort((a,b)=>b.pontos-a.pontos||b.golos-a.golos);
   const icons=['🥇','🥈','🥉'];
   let rankHtml='';
-  comPts.forEach((s,i)=>{const pos=i+1,cls=pos<=3?['rank-pos-1','rank-pos-2','rank-pos-3'][pos-1]:'';rankHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px">${iniciais(s.jogadores?.nome||'?')}</div><div class="rank-info"><div class="rank-nome">${s.jogadores?.nome||'?'}</div><div class="rank-stats">${s.pontos}pts · ${s.jogos}J · ${s.vitorias}V ${s.empates}E ${s.derrotas}D</div></div><div class="rank-golos">${s.golos}⚽</div></div>`;});
+  comPts.forEach((s,i)=>{
+    const pos=i+1,cls=pos<=3?['rank-pos-1','rank-pos-2','rank-pos-3'][pos-1]:'';
+    const badge=s.isSub?'<span style="font-size:9px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:1px 5px;margin-left:4px">sub</span>':'';
+    rankHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px;${s.isSub?'background:#1a1a30;color:#8888cc':''}">${iniciais(s.nome)}</div><div class="rank-info"><div class="rank-nome">${s.nome}${badge}</div><div class="rank-stats">${s.pontos}pts · ${s.jogos}J · ${s.vitorias}V ${s.empates}E ${s.derrotas}D</div></div><div class="rank-golos">${s.golos}⚽</div></div>`;
+  });
   document.getElementById('r-class').innerHTML=rankHtml;
-  const marc=[...data].sort((a,b)=>b.golos-a.golos).filter(s=>s.golos>0);
+  const marc=[...todos].sort((a,b)=>b.golos-a.golos).filter(s=>s.golos>0);
   let marcHtml=marc.length===0?'<div class="empty">Sem golos.</div>':'';
-  marc.forEach((s,i)=>{const pos=i+1,cls=pos<=3?['rank-pos-1','rank-pos-2','rank-pos-3'][pos-1]:'';marcHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px">${iniciais(s.jogadores?.nome||'?')}</div><div class="rank-info"><div class="rank-nome">${s.jogadores?.nome||'?'}</div><div class="rank-stats">${s.jogos} jogos</div></div><div class="rank-golos">${s.golos}⚽</div></div>`;});
+  marc.forEach((s,i)=>{
+    const pos=i+1,cls=pos<=3?['rank-pos-1','rank-pos-2','rank-pos-3'][pos-1]:'';
+    const badge=s.isSub?'<span style="font-size:9px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:1px 5px;margin-left:4px">sub</span>':'';
+    marcHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px;${s.isSub?'background:#1a1a30;color:#8888cc':''}">${iniciais(s.nome)}</div><div class="rank-info"><div class="rank-nome">${s.nome}${badge}</div><div class="rank-stats">${s.jogos} jogos</div></div><div class="rank-golos">${s.golos}⚽</div></div>`;
+  });
   document.getElementById('r-marc').innerHTML=marcHtml;
 }
 
@@ -870,10 +931,15 @@ async function carregarStats(){
 
 // ── PARTILHA MVP ──
 async function partilharMVP(){
-  const{data:stats}=await db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1);
-  if(!stats||stats.length===0||stats[0].golos===0){alert('Ainda não há golos registados.');return;}
-  const mvp=stats[0];
-  const nome=mvp.jogadores?.nome||'?';
+  const[{data:fixos},{data:subs}]=await Promise.all([
+    db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1),
+    db.from('substitutos').select('*').order('golos',{ascending:false}).limit(1)
+  ]);
+  const mvpFixo=fixos?.[0], mvpSub=subs?.[0];
+  let mvp,nome,isSub=false;
+  if(!mvpFixo&&!mvpSub||(!(mvpFixo?.golos>0)&&!(mvpSub?.golos>0))){alert('Ainda não há golos registados.');return;}
+  if((mvpSub?.golos||0)>(mvpFixo?.golos||0)){mvp=mvpSub;nome=mvpSub.nome;isSub=true;}
+  else{mvp=mvpFixo;nome=mvpFixo.jogadores?.nome||'?';}
   const canvas=document.getElementById('share-canvas');
   const ctx=canvas.getContext('2d');
   canvas.width=600; canvas.height=340;
@@ -1054,6 +1120,5 @@ async function exportarDados(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fut5-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
 </script>
-
 </body>
 </html>
