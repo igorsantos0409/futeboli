@@ -1003,8 +1003,7 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
-      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
+      
       y+=28;
     });
     y+=16;
@@ -1017,8 +1016,7 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
-      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
+      
       y+=28;
     });
     y+=20;
@@ -1108,7 +1106,7 @@ function agendarNotificacaoSegunda(){
   proxSegunda.setHours(9,0,0,0);
   const msAte=proxSegunda-agora;
   setTimeout(()=>{
-    if(Notification.permission==='granted'){new Notification('⚽ Fut5 — Jogo hoje!',{body:'Não te esqueças do jogo de futebol esta semana!',icon:'/favicon.ico'});}
+    if(Notification.permission==='granted'){new Notification('⚽ Futeboli — Jogo hoje!',{body:'Não te esqueças do jogo de futebol esta semana!',icon:'/favicon.ico'});}
     agendarNotificacaoSegunda();
   },msAte);
 }
