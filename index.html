@@ -856,7 +856,7 @@ async function carregarStats(){
 function partilharEquipas(){
   if(!partida.equipaA||partida.equipaA.length===0){alert('Sorteia as equipas primeiro.');return;}
   const eqA=partida.equipaA, eqB=partida.equipaB;
-  const fA=eqA.reduce((a,j)=>a+(j.rating||3),0), fB=eqB.reduce((a,j)=>a+(j.rating||3),0);
+
   const linhasA=eqA.length, linhasB=eqB.length;
   const altTotal=80+40+40+(linhasA*36)+20+40+(linhasB*36)+40;
   const canvas=document.getElementById('share-canvas');
@@ -876,7 +876,7 @@ function partilharEquipas(){
     // Equipa A
     let y=115;
     ctx.fillStyle='#3080d0'; ctx.font='bold 14px system-ui'; ctx.textAlign='left'; ctx.fillText('● EQUIPA A',40,y);
-    ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText('Força: '+fA,560,y);
+
     y+=14;
     eqA.forEach(j=>{
       y+=8;
@@ -890,7 +890,7 @@ function partilharEquipas(){
     ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(560,y); ctx.stroke();
     y+=20;
     ctx.fillStyle='#f07020'; ctx.font='bold 14px system-ui'; ctx.textAlign='left'; ctx.fillText('● EQUIPA B',40,y);
-    ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText('Força: '+fB,560,y);
+
     y+=14;
     eqB.forEach(j=>{
       y+=8;
