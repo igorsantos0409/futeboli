@@ -685,6 +685,14 @@ async function terminarPartida() {
   [...partida.equipaA,...partida.equipaB].forEach(j=>{const key=j.id||j.nome,g=partida.marc[key]||0;if(g>0)marcArr.push({nome:j.nome,id:j.id||null,golos:g});});
   const dataJogo=jogoAtual.data||new Date().toISOString().split('T')[0];
   const { data: novaPartida } = await db.from('jogos_scoreboard').insert({data:dataJogo,equipa_a:{jogadores:partida.equipaA.map(j=>({id:j.id||null,nome:j.nome}))},equipa_b:{jogadores:partida.equipaB.map(j=>({id:j.id||null,nome:j.nome}))},golos_a:partida.golosA,golos_b:partida.golosB,marcadores:marcArr}).select().single();
+  // Ligar o movimento de substitutos à partida pelo ID
+  if(novaPartida&&jogoAtual.subs&&jogoAtual.subs.length>0){
+    const{data:movRecente}=await db.from('caixa').select('*').eq('data',dataJogo).like('descricao','%substituto%').order('criado_em',{ascending:false}).limit(1);
+    if(movRecente&&movRecente.length>0){
+      await db.from('caixa').update({descricao:`${jogoAtual.subs.length} substituto(s) — ${dataJogo} [partida:${novaPartida.id}]`}).eq('id',movRecente[0].id);
+      await carregarMovimentos();
+    }
+  }
   const gA=partida.golosA,gB=partida.golosB,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
   for(const j of [...partida.equipaA,...partida.equipaB]){
     if(!j.id)continue;
@@ -793,13 +801,21 @@ async function confirmarEliminar(){
   if(!eliminaId)return;
   const{data:p}=await db.from('jogos_scoreboard').select('*').eq('id',eliminaId).single();
   if(p){
+    // Reverter estatísticas dos jogadores
     const todos=[...(p.equipa_a?.jogadores||[]),...(p.equipa_b?.jogadores||[])];
     const marc=p.marcadores||[],gA=p.golos_a,gB=p.golos_b,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
     for(const j of todos){if(!j.id)continue;const isA=(p.equipa_a?.jogadores||[]).some(x=>x.id===j.id),golosJ=marc.find(m=>m.id===j.id)?.golos||0;const{data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();if(est){await db.from('estatisticas_jogadores').update({golos:Math.max(0,est.golos-golosJ),jogos:Math.max(0,est.jogos-1),vitorias:Math.max(0,est.vitorias-(isA?(vitA?1:0):(vitB?1:0))),derrotas:Math.max(0,est.derrotas-(isA?(vitB?1:0):(vitA?1:0))),empates:Math.max(0,est.empates-(emp?1:0))}).eq('jogador_id',j.id);}}
+    // Reverter movimento da caixa referente aos substitutos desta partida
+    const{data:movs}=await db.from('caixa').select('*').like('descricao',`%partida:${eliminaId}%`);
+    if(movs&&movs.length>0){
+      for(const m of movs) await db.from('caixa').delete().eq('id',m.id);
+    }
   }
   await db.from('jogos_scoreboard').delete().eq('id',eliminaId);
   eliminaId=null;fecharModal('modal-eliminar');
+  await carregarMovimentos();
   await carregarHistorico();await carregarRanking();
+  renderCaixa();
 }
 
 // ── RANKING ──
