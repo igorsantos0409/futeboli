@@ -554,7 +554,7 @@ function showPage(id) {
 async function renderDash() {
   const caixa = calcCaixa();
   document.getElementById('d-jog').textContent = jogadores.length;
-  document.getElementById('d-caixa').textContent = caixa.toFixed(0)+'€';
+  document.getElementById('d-caixa').textContent = Number.isInteger(caixa) ? caixa+'€' : caixa.toFixed(2).replace('.',',')+'€';
   document.getElementById('d-mes').textContent = new Date().toLocaleDateString('pt-PT',{month:'long',year:'numeric'});
   const pct = Math.min(100,(caixa/150)*100);
   document.getElementById('d-prog').style.width = pct+'%';
@@ -761,6 +761,7 @@ async function guardarSubs(){
     await db.from('substitutos').update({rating:subStars}).eq('id',existente.id);
   }
   await carregarSubstitutos();
+  await renderDash();
   fecharModal('modal-subs');renderJogo();
 }
 
