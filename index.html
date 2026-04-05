@@ -571,7 +571,7 @@ async function renderDash() {
   const mvpBox = document.getElementById('d-mvp');
   if (stats && stats.length>0 && stats[0].golos>0) {
     const mvp = stats[0];
-    mvpBox.innerHTML = `<div class="mvp-box"><div class="mvp-icon">🏅</div><div class="mvp-info"><div class="mvp-titulo">MVP — Melhor marcador</div><div class="mvp-nome">${mvp.jogadores?.nome||'?'}</div><div class="mvp-sub">${mvp.golos} golos · ${mvp.vitorias}V ${mvp.empates}E ${mvp.derrotas}D</div></div></div>`;
+    mvpBox.innerHTML = `<div class="mvp-box"><div class="mvp-icon">🏅</div><div class="mvp-info"><div class="mvp-titulo">MVP — Melhor marcador</div><div class="mvp-nome">${mvp.jogadores?.nome||'?'}</div><div class="mvp-sub">${mvp.golos} golos · ${mvp.vitorias}V ${mvp.empates}E ${mvp.derrotas}D</div></div><button class="btn btn-sec btn-sm" onclick="partilharMVP()" style="flex-shrink:0;padding:6px 10px">📤</button></div>`;
   } else { mvpBox.innerHTML=''; }
   let html=''; jogadores.length===0 && (html='<div class="empty">Sem jogadores</div>');
   jogadores.forEach(j => { html+=`<div class="jogador-row" style="cursor:default"><div class="avatar">${iniciais(j.nome)}</div><div class="jogador-info"><div class="jogador-nome">${j.nome}</div></div><div class="badge ${j.pago_mes?'badge-pago':'badge-falta'}" onclick="togglePago('${j.id}',${!j.pago_mes})">${j.pago_mes?'✓ Pago':'✗ Pendente'}</div></div>`; });
@@ -852,6 +852,44 @@ async function carregarStats(){
 }
 
 
+// ── PARTILHA MVP ──
+async function partilharMVP(){
+  const{data:stats}=await db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1);
+  if(!stats||stats.length===0||stats[0].golos===0){alert('Ainda não há golos registados.');return;}
+  const mvp=stats[0];
+  const nome=mvp.jogadores?.nome||'?';
+  const canvas=document.getElementById('share-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=600; canvas.height=340;
+  ctx.clearRect(0,0,600,340);
+  ctx.fillStyle='#0d1f15'; ctx.fillRect(0,0,600,340);
+  ctx.fillStyle='#142a1c'; ctx.beginPath(); ctx.roundRect(20,20,560,300,16); ctx.fill();
+  // Borda dourada
+  ctx.strokeStyle='#f0c030'; ctx.lineWidth=2; ctx.beginPath(); ctx.roundRect(22,22,556,296,15); ctx.stroke();
+  // Cabeçalho
+  ctx.fillStyle='#8ab89a'; ctx.font='bold 11px system-ui'; ctx.textAlign='center';
+  ctx.fillText('FUTEBOLI',300,50);
+  ctx.fillStyle='#f0c030'; ctx.font='bold 20px system-ui';
+  ctx.fillText('MVP da semana',300,76);
+  ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,88); ctx.lineTo(560,88); ctx.stroke();
+  // Medalha
+  ctx.font='64px system-ui'; ctx.textAlign='center'; ctx.fillText('🏅',300,160);
+  // Nome
+  ctx.fillStyle='#e8f5ed'; ctx.font='bold 28px system-ui'; ctx.textAlign='center';
+  ctx.fillText(nome,300,205);
+  // Stats
+  ctx.fillStyle='#8ab89a'; ctx.font='14px system-ui';
+  ctx.fillText(`${mvp.golos} golos  ·  ${mvp.vitorias}V ${mvp.empates}E ${mvp.derrotas}D  ·  ${mvp.jogos} jogos`,300,230);
+  // Linha separadora
+  ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,248); ctx.lineTo(560,248); ctx.stroke();
+  // Rodapé
+  ctx.fillStyle='#2a4a35'; ctx.font='11px system-ui'; ctx.textAlign='center';
+  ctx.fillText('futeboli.github.io',300,272);
+  const img=canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
+
 // ── PARTILHA EQUIPAS ──
 function partilharEquipas(){
   if(!partida.equipaA||partida.equipaA.length===0){alert('Sorteia as equipas primeiro.');return;}
@@ -882,7 +920,7 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'':'');
+      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
       ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
       y+=28;
     });
@@ -896,7 +934,7 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'':'');
+      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
       ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
       y+=28;
     });
@@ -921,7 +959,8 @@ function abrirShareModal(){
   ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,380);
   ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,340,16);ctx.fill();
   // Título
-  ctx.fillStyle='#25a865';ctx.font='bold 28px system-ui';ctx.textAlign='center';ctx.fillText('Fut5',300,70);
+  ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('FUTEBOLI',300,55);
+  ctx.fillStyle='#25a865';ctx.font='bold 22px system-ui';ctx.textAlign='center';ctx.fillText('Resultado da partida',300,78);
   // Data
   ctx.fillStyle='#8ab89a';ctx.font='14px system-ui';
   const d=new Date(p.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
@@ -944,7 +983,7 @@ function abrirShareModal(){
   ctx.fillStyle='#f07020';
   ctx.fillText('B: '+(p.eqB||[]).join(', '),40,320);
   // Rodapé
-  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('futeboli • Fut5 Manager',300,360);
+  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('futeboli.github.io',300,360);
   // Preview
   const img=canvas.toDataURL('image/png');
   document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
