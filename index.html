@@ -235,7 +235,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
     </div>
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="card-title" style="margin:0">Substitutos (3,75€ cada)</div>
+        <div class="card-title" style="margin:0">Substitutos (3€ cada)</div>
         <button class="btn btn-sec btn-sm" onclick="abrirModalSubs()">+ Adicionar</button>
       </div>
       <div id="pres-subs"></div>
@@ -323,7 +323,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
     </div>
     <div class="card">
       <div class="card-title">Ajuste manual</div>
-      <div class="field"><label>Valor (€)</label><input type="number" id="mov-valor" placeholder="3.75" step="0.01" inputmode="decimal"></div>
+      <div class="field"><label>Valor (€)</label><input type="number" id="mov-valor" placeholder="3" step="0.01" inputmode="decimal"></div>
       <div class="field"><label>Descrição</label><input type="text" id="mov-desc" placeholder="ex: Substituto João"></div>
       <div class="btn-row">
         <button class="btn btn-prim" onclick="addMovimento(1)">+ Entrada</button>
@@ -601,7 +601,7 @@ function renderJogo() {
   });
   document.getElementById('pres-fixos').innerHTML = html||'<div class="empty">Sem jogadores</div>';
   let subsHtml='';
-  (jogoAtual.subs||[]).forEach((s,i) => { subsHtml+=`<div class="presenca-item" style="margin-bottom:6px"><div class="avatar" style="width:30px;height:30px;font-size:11px;background:#4a2a10;color:var(--laranja)">${iniciais(s.nome)}</div><div class="presenca-nome">${s.nome} ${stars(s.rating,11)}</div><span style="font-size:12px;color:var(--verde-claro);margin-right:8px">3,75€</span><button class="btn btn-danger btn-sm" onclick="remSubs(${i})" style="padding:3px 9px;font-size:16px">×</button></div>`; });
+  (jogoAtual.subs||[]).forEach((s,i) => { subsHtml+=`<div class="presenca-item" style="margin-bottom:6px"><div class="avatar" style="width:30px;height:30px;font-size:11px;background:#4a2a10;color:var(--laranja)">${iniciais(s.nome)}</div><div class="presenca-nome">${s.nome} ${stars(s.rating,11)}</div><span style="font-size:12px;color:var(--verde-claro);margin-right:8px">3€</span><button class="btn btn-danger btn-sm" onclick="remSubs(${i})" style="padding:3px 9px;font-size:16px">×</button></div>`; });
   document.getElementById('pres-subs').innerHTML = subsHtml||'<p style="font-size:13px;color:var(--texto2)">Nenhum substituto adicionado.</p>';
 }
 function togglePres(id) { jogoAtual.presencas[id]=!(jogoAtual.presencas[id]!==false); renderJogo(); }
@@ -623,7 +623,7 @@ function sortearEquipas() {
 async function fecharJogo() {
   if(!jogoAtual.data){alert('Configura a data do jogo primeiro.');return;}
   const presentes=jogadores.filter(j=>jogoAtual.presencas[j.id]!==false);
-  const subs=jogoAtual.subs||[]; const totalSubs=subs.length*3.75;
+  const subs=jogoAtual.subs||[]; const totalSubs=subs.length*3;
   if(totalSubs>0){await db.from('caixa').insert({descricao:`${subs.length} substituto(s) — ${jogoAtual.data}`,valor:totalSubs,data:jogoAtual.data});await carregarMovimentos();}
   await db.from('jogos').insert({data:jogoAtual.data,presentes:presentes.map(j=>j.nome),subs,total_subs:totalSubs,caixa_pos:calcCaixa()});
   jogoAtual={data:'',presencas:{},subs:[]};
@@ -697,48 +697,12 @@ async function terminarPartida() {
   }
   const gA=partida.golosA,gB=partida.golosB,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
   for(const j of [...partida.equipaA,...partida.equipaB]){
-    const isA=j.id
-      ? partida.equipaA.some(x=>x.id===j.id)
-      : partida.equipaA.some(x=>!x.id&&x.nome===j.nome);
-    const key=j.id||j.nome;
-    const golosJ=partida.marc[key]||0;
-    const updateStats={
-      golos:golosJ,
-      jogos:1,
-      vitorias:isA?(vitA?1:0):(vitB?1:0),
-      derrotas:isA?(vitB?1:0):(vitA?1:0),
-      empates:emp?1:0
-    };
-
-    if(j.id){
-      const {data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
-      if(est){
-        await db.from('estatisticas_jogadores').update({
-          golos:(est.golos||0)+updateStats.golos,
-          jogos:(est.jogos||0)+updateStats.jogos,
-          vitorias:(est.vitorias||0)+updateStats.vitorias,
-          derrotas:(est.derrotas||0)+updateStats.derrotas,
-          empates:(est.empates||0)+updateStats.empates
-        }).eq('jogador_id',j.id);
-      } else {
-        await db.from('estatisticas_jogadores').insert({jogador_id:j.id,...updateStats});
-      }
-    } else {
-      const sub=substitutosConhecidos.find(s=>s.nome===j.nome);
-      if(sub){
-        await db.from('substitutos').update({
-          golos:(sub.golos||0)+updateStats.golos,
-          jogos:(sub.jogos||0)+updateStats.jogos,
-          vitorias:(sub.vitorias||0)+updateStats.vitorias,
-          derrotas:(sub.derrotas||0)+updateStats.derrotas,
-          empates:(sub.empates||0)+updateStats.empates
-        }).eq('id',sub.id);
-      } else {
-        await db.from('substitutos').insert({nome:j.nome,rating:j.rating||3,...updateStats});
-      }
-    }
+    if(!j.id)continue;
+    const isA=partida.equipaA.some(x=>x.id===j.id),golosJ=partida.marc[j.id]||0;
+    const {data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
+    if(est){await db.from('estatisticas_jogadores').update({golos:est.golos+golosJ,jogos:est.jogos+1,vitorias:est.vitorias+(isA?(vitA?1:0):(vitB?1:0)),derrotas:est.derrotas+(isA?(vitB?1:0):(vitA?1:0)),empates:est.empates+(emp?1:0)}).eq('jogador_id',j.id);}
+    else{await db.from('estatisticas_jogadores').insert({jogador_id:j.id,golos:golosJ,jogos:1,vitorias:isA?(vitA?1:0):(vitB?1:0),derrotas:isA?(vitB?1:0):(vitA?1:0),empates:emp?1:0});}
   }
-  await carregarSubstitutos();
   // Guardar dados para partilha
   sharePartidaData={golosA:partida.golosA,golosB:partida.golosB,marcadores:marcArr,data:dataJogo,eqA:partida.equipaA.map(j=>j.nome),eqB:partida.equipaB.map(j=>j.nome)};
   document.getElementById('score-setup').style.display='block';
@@ -792,15 +756,7 @@ async function guardarSubs(){
   // Guardar ou atualizar substituto conhecido
   const existente=substitutosConhecidos.find(s=>s.nome===nome);
   if(!existente){
-    await db.from('substitutos').insert({
-      nome,
-      rating:subStars,
-      jogos:0,
-      golos:0,
-      vitorias:0,
-      derrotas:0,
-      empates:0
-    });
+    await db.from('substitutos').insert({nome,rating:subStars});
   } else if(existente.rating!==subStars){
     await db.from('substitutos').update({rating:subStars}).eq('id',existente.id);
   }
@@ -1033,7 +989,7 @@ function partilharEquipas(){
     ctx.fillStyle='#142a1c'; ctx.beginPath(); ctx.roundRect(20,20,560,altTotal-40,16); ctx.fill();
     // Título
     ctx.fillStyle='#25a865'; ctx.font='bold 22px system-ui'; ctx.textAlign='center';
-    ctx.fillText('FUTEBOLI — Equipas de hoje',300,58);
+    ctx.fillText('Fut5 — Equipas de hoje',300,58);
     const d=jogoAtual.data?new Date(jogoAtual.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'}):'';
     ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.fillText(d,300,78);
     // Linha
@@ -1047,6 +1003,8 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
+      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
+      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
       y+=28;
     });
     y+=16;
@@ -1059,6 +1017,8 @@ function partilharEquipas(){
       y+=8;
       ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
       ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
+      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
+      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
       y+=28;
     });
     y+=20;
@@ -1117,7 +1077,7 @@ async function partilharImagem(){
   try{
     canvas.toBlob(async blob=>{
       if(navigator.share&&navigator.canShare&&navigator.canShare({files:[new File([blob],'resultado.png',{type:'image/png'})]})){
-        await navigator.share({files:[new File([blob],'resultado.png',{type:'image/png'})],title:'Resultado FUTEBOLI'});
+        await navigator.share({files:[new File([blob],'resultado.png',{type:'image/png'})],title:'Resultado Fut5'});
       }else{
         const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='resultado-fut5.png';a.click();
       }
@@ -1148,7 +1108,7 @@ function agendarNotificacaoSegunda(){
   proxSegunda.setHours(9,0,0,0);
   const msAte=proxSegunda-agora;
   setTimeout(()=>{
-    if(Notification.permission==='granted'){new Notification('⚽ FUTEBOLI — Jogo hoje!',{body:'Não te esqueças do jogo de futebol esta semana!',icon:'/favicon.ico'});}
+    if(Notification.permission==='granted'){new Notification('⚽ Fut5 — Jogo hoje!',{body:'Não te esqueças do jogo de futebol esta semana!',icon:'/favicon.ico'});}
     agendarNotificacaoSegunda();
   },msAte);
 }
