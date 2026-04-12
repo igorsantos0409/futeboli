@@ -852,9 +852,19 @@ async function confirmarEliminar(){
     }
     await carregarSubstitutos();
     // Reverter movimento da caixa referente aos substitutos desta partida
-    const{data:movs}=await db.from('caixa').select('*').like('descricao',`%partida:${eliminaId}%`);
-    if(movs&&movs.length>0){
-      for(const m of movs) await db.from('caixa').delete().eq('id',m.id);
+    // Tenta primeiro pelo ID da partida (jogos novos)
+    const{data:movsPorId}=await db.from('caixa').select('*').like('descricao',`%partida:${eliminaId}%`);
+    if(movsPorId&&movsPorId.length>0){
+      for(const m of movsPorId) await db.from('caixa').delete().eq('id',m.id);
+    } else {
+      // Fallback: procura pelo data da partida + "substituto" (jogos sem ID ligado)
+      const{data:movsPorData}=await db.from('caixa').select('*')
+        .eq('data',p.data)
+        .like('descricao','%substituto%')
+        .not('descricao','like','%partida:%');
+      if(movsPorData&&movsPorData.length>0){
+        for(const m of movsPorData) await db.from('caixa').delete().eq('id',m.id);
+      }
     }
   }
   await db.from('jogos_scoreboard').delete().eq('id',eliminaId);
