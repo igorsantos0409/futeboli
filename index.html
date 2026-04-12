@@ -7,9 +7,321 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fut5">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <title>Fut5 Manager</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ── CARTÃO DE JOGADOR ──
+let cartaoAtual = null;
+
+async function abrirCartao(id, nome, isSub) {
+  cartaoAtual = { id, nome, isSub };
+  document.getElementById('cartao-titulo').textContent = nome;
+  document.getElementById('cartao-conteudo').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('modal-cartao').classList.add('open');
+
+  let est = null;
+  if (isSub || !id) {
+    const { data } = await db.from('substitutos').select('*').eq('nome', nome).maybeSingle();
+    est = data ? { ...data, isSub: true } : null;
+  } else {
+    const { data } = await db.from('estatisticas_jogadores').select('*, jogadores(nome, rating)').eq('jogador_id', id).maybeSingle();
+    est = data ? { ...data, isSub: false, rating: data.jogadores?.rating } : null;
+  }
+
+  // Partidas com este jogador
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*').order('criado_em', { ascending: false });
+  const minhasPartidas = (partidas || []).filter(p =>
+    (p.equipa_a?.jogadores || []).some(j => j.nome === nome) ||
+    (p.equipa_b?.jogadores || []).some(j => j.nome === nome)
+  );
+
+  const golosTotais = (partidas || []).reduce((sum, p) => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    return sum + (marc?.golos || 0);
+  }, 0);
+
+  const seq = est?.sequencia_atual || 0;
+  const melhorSeq = est?.melhor_sequencia || 0;
+
+  // Hat-tricks
+  let hatCount = 0;
+  (partidas || []).forEach(p => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    if (marc && marc.golos >= 3) hatCount += Math.floor(marc.golos / 3);
+  });
+
+  const jogos = est?.jogos || 0;
+  const vitorias = est?.vitorias || 0;
+  const empates = est?.empates || 0;
+  const derrotas = est?.derrotas || 0;
+  const pontos = vitorias * 3 + empates;
+  const taxaVit = jogos > 0 ? Math.round((vitorias / jogos) * 100) : 0;
+  const rating = est?.rating || (isSub ? 3 : jogadores.find(j => j.id === id)?.rating || 3);
+
+  const subBadge = (isSub || !id) ? '<span style="font-size:11px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:2px 8px;margin-left:8px">substituto</span>' : '';
+
+  document.getElementById('cartao-conteudo').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:64px;height:64px;border-radius:50%;background:${isSub?'#1a1a30':'var(--verde-escuro)'};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:${isSub?'#8888cc':'var(--verde-claro)'};margin:0 auto 8px">${iniciais(nome)}</div>
+      <div style="font-size:18px;font-weight:700">${nome}${subBadge}</div>
+      <div style="margin-top:6px">${stars(rating, 16)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div class="stat-box"><div class="stat-val">${pontos}</div><div class="stat-lbl">Pontos</div></div>
+      <div class="stat-box"><div class="stat-val">${jogos}</div><div class="stat-lbl">Jogos</div></div>
+      <div class="stat-box"><div class="stat-val">${golosTotais}⚽</div><div class="stat-lbl">Golos</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div class="stat-box"><div class="stat-val" style="color:#4ad68a">${vitorias}V</div><div class="stat-lbl">Vitórias</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--amarelo)">${empates}E</div><div class="stat-lbl">Empates</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--vermelho)">${derrotas}D</div><div class="stat-lbl">Derrotas</div></div>
+    </div>
+    <div style="background:var(--fundo3);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span style="color:var(--texto2)">Taxa de vitória</span><span style="font-weight:700;color:var(--verde-claro)">${taxaVit}%</span>
+      </div>
+      <div class="progress-bar" style="margin:0"><div class="progress-fill" style="width:${taxaVit}%"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="stat-box"><div class="stat-val" style="color:var(--laranja)">${melhorSeq}🔥</div><div class="stat-lbl">Melhor sequência</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--amarelo)">${hatCount}🎩</div><div class="stat-lbl">Hat-tricks</div></div>
+    </div>
+  `;
+}
+
+async function partilharCartao() {
+  if (!cartaoAtual) return;
+  const { nome, isSub, id } = cartaoAtual;
+
+  let est = null;
+  if (isSub || !id) {
+    const { data } = await db.from('substitutos').select('*').eq('nome', nome).maybeSingle();
+    est = data;
+  } else {
+    const { data } = await db.from('estatisticas_jogadores').select('*, jogadores(nome, rating)').eq('jogador_id', id).maybeSingle();
+    est = data;
+  }
+
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*');
+  const golosTotais = (partidas || []).reduce((sum, p) => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    return sum + (marc?.golos || 0);
+  }, 0);
+  let hatCount = 0;
+  (partidas || []).forEach(p => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    if (marc && marc.golos >= 3) hatCount += Math.floor(marc.golos / 3);
+  });
+
+  const jogos = est?.jogos || 0, vitorias = est?.vitorias || 0, empates = est?.empates || 0, derrotas = est?.derrotas || 0;
+  const pontos = vitorias * 3 + empates;
+  const taxaVit = jogos > 0 ? Math.round((vitorias / jogos) * 100) : 0;
+  const melhorSeq = est?.melhor_sequencia || 0;
+  const rating = est?.rating || 3;
+
+  const canvas = document.getElementById('share-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 600; canvas.height = 420;
+  ctx.fillStyle = '#0d1f15'; ctx.fillRect(0, 0, 600, 420);
+  ctx.fillStyle = '#142a1c'; ctx.beginPath(); ctx.roundRect(20, 20, 560, 380, 16); ctx.fill();
+
+  // Header
+  ctx.fillStyle = '#8ab89a'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('FUTEBOLI', 300, 48);
+  ctx.fillStyle = '#25a865'; ctx.font = 'bold 18px system-ui';
+  ctx.fillText('Cartão do jogador', 300, 70);
+  ctx.strokeStyle = '#2a4a35'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 82); ctx.lineTo(560, 82); ctx.stroke();
+
+  // Avatar
+  const avatarColor = isSub ? '#1a1a30' : '#0f4f2f';
+  const textColor = isSub ? '#8888cc' : '#25a865';
+  ctx.fillStyle = avatarColor; ctx.beginPath(); ctx.arc(300, 130, 40, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = textColor; ctx.font = 'bold 28px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(iniciais(nome), 300, 140);
+
+  // Nome
+  ctx.fillStyle = '#e8f5ed'; ctx.font = 'bold 22px system-ui'; ctx.fillText(nome, 300, 184);
+  if (isSub) { ctx.fillStyle = '#8888cc'; ctx.font = '12px system-ui'; ctx.fillText('substituto', 300, 202); }
+
+  // Rating stars
+  const starSize = 18, totalStars = 5;
+  const starsWidth = totalStars * starSize + (totalStars - 1) * 4;
+  let sx = 300 - starsWidth / 2;
+  for (let i = 1; i <= 5; i++) {
+    ctx.fillStyle = i <= rating ? '#f0c030' : '#2a4a35';
+    ctx.font = `${starSize}px system-ui`; ctx.textAlign = 'left';
+    ctx.fillText('★', sx, 225); sx += starSize + 4;
+  }
+
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 235); ctx.lineTo(560, 235); ctx.stroke();
+
+  // Stats grid
+  const statsData = [
+    { val: pontos + 'pts', lbl: 'Pontos', x: 110 },
+    { val: jogos + 'J', lbl: 'Jogos', x: 220 },
+    { val: golosTotais + '⚽', lbl: 'Golos', x: 330 },
+    { val: vitorias + 'V', lbl: 'Vitórias', x: 440 },
+  ];
+  statsData.forEach(s => {
+    ctx.fillStyle = '#25a865'; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(s.val, s.x, 268);
+    ctx.fillStyle = '#8ab89a'; ctx.font = '11px system-ui';
+    ctx.fillText(s.lbl, s.x, 284);
+  });
+
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 296); ctx.lineTo(560, 296); ctx.stroke();
+
+  // Segunda linha stats
+  const stats2 = [
+    { val: taxaVit + '%', lbl: 'Taxa vitória', x: 140 },
+    { val: melhorSeq + '🔥', lbl: 'Melhor seq.', x: 300 },
+    { val: hatCount + '🎩', lbl: 'Hat-tricks', x: 460 },
+  ];
+  stats2.forEach(s => {
+    ctx.fillStyle = '#e8f5ed'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(s.val, s.x, 328);
+    ctx.fillStyle = '#8ab89a'; ctx.font = '11px system-ui';
+    ctx.fillText(s.lbl, s.x, 344);
+  });
+
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 358); ctx.lineTo(560, 358); ctx.stroke();
+  ctx.fillStyle = '#2a4a35'; ctx.font = '11px system-ui'; ctx.textAlign = 'right';
+  ctx.fillText('futeboli.github.io', 560, 388);
+
+  fecharModal('modal-cartao');
+  const img = canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML = `<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
+
+// ── HEAD-TO-HEAD ──
+let h2hSelecionados = [];
+
+function renderH2HSelecao() {
+  h2hSelecionados = [];
+  const todosJog = [
+    ...jogadores.map(j => ({ id: j.id, nome: j.nome, isSub: false })),
+    ...substitutosConhecidos.map(s => ({ id: null, nome: s.nome, isSub: true }))
+  ];
+  const container = document.getElementById('h2h-selecao');
+  if (!container) return;
+  container.innerHTML = todosJog.map(j =>
+    `<button class="chip" id="h2h-btn-${j.nome.replace(/\s/g,'_')}" onclick="selecionarH2H('${j.nome}',${j.isSub})"
+      style="cursor:pointer;padding:6px 12px;font-size:13px;background:var(--fundo3);border:1px solid var(--borda)">${j.nome}${j.isSub ? ' <span style='font-size:10px;color:#8888cc'>(sub)</span>' : ''}</button>`
+  ).join('');
+  document.getElementById('h2h-resultado').innerHTML = '<p style="font-size:13px;color:var(--texto2)">Seleciona dois jogadores para comparar.</p>';
+}
+
+async function selecionarH2H(nome, isSub) {
+  const btnId = 'h2h-btn-' + nome.replace(/\s/g, '_');
+  const btn = document.getElementById(btnId);
+
+  const idx = h2hSelecionados.findIndex(j => j.nome === nome);
+  if (idx >= 0) {
+    // Desselecionar
+    h2hSelecionados.splice(idx, 1);
+    if (btn) { btn.style.background = 'var(--fundo3)'; btn.style.borderColor = 'var(--borda)'; btn.style.color = 'var(--texto)'; }
+    document.getElementById('h2h-resultado').innerHTML = '<p style="font-size:13px;color:var(--texto2)">Seleciona dois jogadores para comparar.</p>';
+    return;
+  }
+  if (h2hSelecionados.length >= 2) return;
+
+  h2hSelecionados.push({ nome, isSub });
+  if (btn) { btn.style.background = 'var(--verde-escuro)'; btn.style.borderColor = 'var(--verde-claro)'; btn.style.color = 'var(--verde-claro)'; }
+
+  if (h2hSelecionados.length === 2) {
+    await calcularH2H();
+  }
+}
+
+async function calcularH2H() {
+  const [jA, jB] = h2hSelecionados;
+  document.getElementById('h2h-resultado').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*').order('criado_em', { ascending: false });
+
+  // Partidas onde ambos jogaram
+  const juntos = (partidas || []).filter(p => {
+    const todosA = [...(p.equipa_a?.jogadores || []), ...(p.equipa_b?.jogadores || [])];
+    return todosA.some(j => j.nome === jA.nome) && todosA.some(j => j.nome === jB.nome);
+  });
+
+  if (juntos.length === 0) {
+    document.getElementById('h2h-resultado').innerHTML = `<p style="font-size:13px;color:var(--texto2);text-align:center;padding:16px">Ainda não jogaram juntos.</p>`;
+    return;
+  }
+
+  let juntosVitA = 0, juntosVitB = 0, juntosEmp = 0;
+  let contraVitA = 0, contraVitB = 0, contraEmp = 0;
+  let golosA = 0, golosB = 0;
+
+  juntos.forEach(p => {
+    const eqA_nomes = (p.equipa_a?.jogadores || []).map(j => j.nome);
+    const eqB_nomes = (p.equipa_b?.jogadores || []).map(j => j.nome);
+    const aEmA = eqA_nomes.includes(jA.nome);
+    const bEmA = eqA_nomes.includes(jB.nome);
+    const mesmaEquipa = (aEmA && bEmA) || (!aEmA && !bEmA);
+
+    // Golos de cada um nesta partida
+    const marcA = (p.marcadores || []).find(m => m.nome === jA.nome);
+    const marcB = (p.marcadores || []).find(m => m.nome === jB.nome);
+    golosA += marcA?.golos || 0;
+    golosB += marcB?.golos || 0;
+
+    const vitA_eq = p.golos_a > p.golos_b;
+    const vitB_eq = p.golos_b > p.golos_a;
+    const empate = p.golos_a === p.golos_b;
+
+    if (mesmaEquipa) {
+      const aGanhou = aEmA ? vitA_eq : vitB_eq;
+      if (aGanhou) { juntosVitA++; juntosVitB++; }
+      else if (empate) { juntosEmp++; }
+      else { }
+    } else {
+      // Contra
+      const aGanhou = aEmA ? vitA_eq : vitB_eq;
+      if (empate) contraEmp++;
+      else if (aGanhou) contraVitA++;
+      else contraVitB++;
+    }
+  });
+
+  const juntosTotal = juntosVitA + juntosEmp + (juntos.length - juntosVitA - juntosEmp);
+  const contraTotal = contraVitA + contraVitB + contraEmp;
+
+  document.getElementById('h2h-resultado').innerHTML = `
+    <div style="background:var(--fundo3);border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--texto2);margin-bottom:10px">Total de jogos juntos: ${juntos.length}</div>
+      <div style="display:flex;justify-content:space-around;margin-bottom:12px">
+        <div style="text-align:center"><div style="font-size:22px;font-weight:800;color:var(--verde-claro)">${golosA}⚽</div><div style="font-size:11px;color:var(--texto2)">${jA.nome}</div></div>
+        <div style="text-align:center;color:var(--texto2);font-size:20px;font-weight:700;padding-top:4px">vs</div>
+        <div style="text-align:center"><div style="font-size:22px;font-weight:800;color:var(--laranja)">${golosB}⚽</div><div style="font-size:11px;color:var(--texto2)">${jB.nome}</div></div>
+      </div>
+      ${contraTotal > 0 ? `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--texto2);margin-bottom:8px">⚔️ Frente a frente (${contraTotal} jogos)</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div style="text-align:center;min-width:40px"><div style="font-size:18px;font-weight:800;color:var(--verde-claro)">${contraVitA}</div><div style="font-size:10px;color:var(--texto2)">${jA.nome.split(' ')[0]}</div></div>
+        <div class="progress-bar" style="flex:1;margin:0;height:12px">
+          <div style="height:100%;display:flex;border-radius:20px;overflow:hidden">
+            <div style="background:var(--verde-claro);flex:${contraVitA}"></div>
+            <div style="background:var(--borda);flex:${contraEmp}"></div>
+            <div style="background:var(--laranja);flex:${contraVitB}"></div>
+          </div>
+        </div>
+        <div style="text-align:center;min-width:40px"><div style="font-size:18px;font-weight:800;color:var(--laranja)">${contraVitB}</div><div style="font-size:10px;color:var(--texto2)">${jB.nome.split(' ')[0]}</div></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--texto2);margin-top:4px">${contraEmp} empate${contraEmp !== 1 ? 's' : ''}</div>
+      ` : ''}
+      ${juntosVitA > 0 || juntosEmp > 0 ? `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--texto2);margin-top:10px;margin-bottom:4px">🤝 Na mesma equipa (${juntosVitA + juntosEmp} jogos)</div>
+      <div style="font-size:13px;color:var(--texto2)">${juntosVitA} vitórias juntos · ${juntosEmp} empates</div>
+      ` : ''}
+    </div>
+    <button class="btn btn-sec btn-full btn-sm" onclick="renderH2HSelecao()">↺ Nova comparação</button>
+  `;
+}
+
+</script>
 <style>
 :root {
   --verde:#1a7a4a;--verde-claro:#25a865;--verde-escuro:#0f4f2f;
@@ -363,6 +675,12 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
       <div class="card-title">💥 Maior goleada</div>
       <div id="r-goleada"><div class="loading"><div class="spinner"></div></div></div>
     </div>
+    <div class="card" style="margin-top:4px">
+      <div class="card-title">⚔️ Head-to-head</div>
+      <p style="font-size:13px;color:var(--texto2);margin-bottom:12px">Seleciona dois jogadores para ver o registo entre eles.</p>
+      <div id="h2h-selecao" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+      <div id="h2h-resultado"></div>
+    </div>
     <div style="margin-top:12px">
       <button class="btn btn-sec btn-full" onclick="partilharTabela()">📤 Partilhar tabela de classificação</button>
       <button class="btn btn-sec btn-full" onclick="partilharResumoSemana()" style="margin-top:8px">📤 Partilhar resumo da semana</button>
@@ -469,6 +787,32 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 </div>
 
+
+<!-- MODAL CARTÃO JOGADOR -->
+<div class="modal-bg" id="modal-cartao">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="cartao-titulo">Cartão do jogador</h3>
+    <div id="cartao-conteudo"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-prim btn-full" onclick="partilharCartao()">📤 Partilhar cartão</button>
+      <button class="btn btn-sec btn-full" onclick="fecharModal('modal-cartao')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL HEAD-TO-HEAD -->
+<div class="modal-bg" id="modal-h2h">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Head-to-head</h3>
+    <div id="h2h-conteudo"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-sec btn-full" onclick="fecharModal('modal-h2h')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <canvas id="share-canvas" width="600" height="400"></canvas>
 
 <script>
@@ -562,7 +906,7 @@ function showPage(id) {
   document.getElementById('page-'+id).classList.add('active');
   ['dashboard','jogo','score','jogadores','caixa','historico','ranking','stats'].forEach((p,i)=>{ if(p===id) document.querySelectorAll('.tab')[i].classList.add('active'); });
   if (id==='historico') carregarHistorico();
-  if (id==='ranking') carregarRanking();
+  if (id==='ranking') { carregarRanking(); renderH2HSelecao(); }
   if (id==='caixa') renderCaixa();
   if (id==='stats') carregarStats();
 }
@@ -744,7 +1088,15 @@ async function terminarPartida() {
 
 // ── JOGADORES ──
 function renderJogadores() {
-  let html=''; jogadores.forEach(j=>{html+=`<div class="jogador-row" onclick="abrirModalJogador('${j.id}')"><div class="avatar">${iniciais(j.nome)}</div><div class="jogador-info"><div class="jogador-nome">${j.nome}</div><div style="margin-top:3px">${stars(j.rating,13)}</div></div><span style="font-size:12px;color:var(--texto2)">${j.rating}/5</span><span style="font-size:18px;color:var(--borda);margin-left:6px">›</span></div>`;});
+  let html=''; jogadores.forEach(j=>{html+=`<div class="jogador-row">
+    <div class="avatar" onclick="abrirModalJogador('${j.id}')" style="cursor:pointer">${iniciais(j.nome)}</div>
+    <div class="jogador-info" onclick="abrirModalJogador('${j.id}')" style="cursor:pointer;flex:1">
+      <div class="jogador-nome">${j.nome}</div>
+      <div style="margin-top:3px">${stars(j.rating,13)}</div>
+    </div>
+    <button class="btn btn-sec btn-sm" onclick="abrirCartao('${j.id}','${j.nome}',false)" style="margin-right:6px;padding:4px 8px;font-size:11px">🪪</button>
+    <span onclick="abrirModalJogador('${j.id}')" style="font-size:18px;color:var(--borda);cursor:pointer">›</span>
+  </div>`;});
   document.getElementById('lista-jogadores').innerHTML=html||'<div class="empty">Sem jogadores</div>';
 }
 function abrirModalJogador(id) {
@@ -947,7 +1299,7 @@ async function carregarRanking(){
   comPts.forEach((s,i)=>{
     const pos=i+1,cls=pos<=3?['rank-pos-1','rank-pos-2','rank-pos-3'][pos-1]:'';
     const badge=s.isSub?'<span style="font-size:9px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:1px 5px;margin-left:4px">sub</span>':'';
-    rankHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px;${s.isSub?'background:#1a1a30;color:#8888cc':''}">${iniciais(s.nome)}</div><div class="rank-info"><div class="rank-nome">${s.nome}${badge}</div><div class="rank-stats">${s.pontos}pts · ${s.jogos}J · ${s.vitorias}V ${s.empates}E ${s.derrotas}D</div></div><div class="rank-golos">${s.golos}⚽</div></div>`;
+    rankHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px;${s.isSub?'background:#1a1a30;color:#8888cc':''}">${iniciais(s.nome)}</div><div class="rank-info"><div class="rank-nome">${s.nome}${badge}</div><div class="rank-stats">${s.pontos}pts · ${s.jogos}J · ${s.vitorias}V ${s.empates}E ${s.derrotas}D</div></div><div class="rank-golos" style="cursor:pointer" onclick="abrirCartao('${s.jogador_id||''}','${s.nome}',${s.isSub})">${s.golos}⚽</div></div>`;
   });
   document.getElementById('r-class').innerHTML=rankHtml;
   const marc=[...todos].sort((a,b)=>b.golos-a.golos).filter(s=>s.golos>0);
@@ -1331,6 +1683,318 @@ async function exportarDados(){
   const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fut5-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
+
+// ── CARTÃO DE JOGADOR ──
+let cartaoAtual = null;
+
+async function abrirCartao(id, nome, isSub) {
+  cartaoAtual = { id, nome, isSub };
+  document.getElementById('cartao-titulo').textContent = nome;
+  document.getElementById('cartao-conteudo').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('modal-cartao').classList.add('open');
+
+  let est = null;
+  if (isSub || !id) {
+    const { data } = await db.from('substitutos').select('*').eq('nome', nome).maybeSingle();
+    est = data ? { ...data, isSub: true } : null;
+  } else {
+    const { data } = await db.from('estatisticas_jogadores').select('*, jogadores(nome, rating)').eq('jogador_id', id).maybeSingle();
+    est = data ? { ...data, isSub: false, rating: data.jogadores?.rating } : null;
+  }
+
+  // Partidas com este jogador
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*').order('criado_em', { ascending: false });
+  const minhasPartidas = (partidas || []).filter(p =>
+    (p.equipa_a?.jogadores || []).some(j => j.nome === nome) ||
+    (p.equipa_b?.jogadores || []).some(j => j.nome === nome)
+  );
+
+  const golosTotais = (partidas || []).reduce((sum, p) => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    return sum + (marc?.golos || 0);
+  }, 0);
+
+  const seq = est?.sequencia_atual || 0;
+  const melhorSeq = est?.melhor_sequencia || 0;
+
+  // Hat-tricks
+  let hatCount = 0;
+  (partidas || []).forEach(p => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    if (marc && marc.golos >= 3) hatCount += Math.floor(marc.golos / 3);
+  });
+
+  const jogos = est?.jogos || 0;
+  const vitorias = est?.vitorias || 0;
+  const empates = est?.empates || 0;
+  const derrotas = est?.derrotas || 0;
+  const pontos = vitorias * 3 + empates;
+  const taxaVit = jogos > 0 ? Math.round((vitorias / jogos) * 100) : 0;
+  const rating = est?.rating || (isSub ? 3 : jogadores.find(j => j.id === id)?.rating || 3);
+
+  const subBadge = (isSub || !id) ? '<span style="font-size:11px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:2px 8px;margin-left:8px">substituto</span>' : '';
+
+  document.getElementById('cartao-conteudo').innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="width:64px;height:64px;border-radius:50%;background:${isSub?'#1a1a30':'var(--verde-escuro)'};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:${isSub?'#8888cc':'var(--verde-claro)'};margin:0 auto 8px">${iniciais(nome)}</div>
+      <div style="font-size:18px;font-weight:700">${nome}${subBadge}</div>
+      <div style="margin-top:6px">${stars(rating, 16)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div class="stat-box"><div class="stat-val">${pontos}</div><div class="stat-lbl">Pontos</div></div>
+      <div class="stat-box"><div class="stat-val">${jogos}</div><div class="stat-lbl">Jogos</div></div>
+      <div class="stat-box"><div class="stat-val">${golosTotais}⚽</div><div class="stat-lbl">Golos</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
+      <div class="stat-box"><div class="stat-val" style="color:#4ad68a">${vitorias}V</div><div class="stat-lbl">Vitórias</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--amarelo)">${empates}E</div><div class="stat-lbl">Empates</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--vermelho)">${derrotas}D</div><div class="stat-lbl">Derrotas</div></div>
+    </div>
+    <div style="background:var(--fundo3);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span style="color:var(--texto2)">Taxa de vitória</span><span style="font-weight:700;color:var(--verde-claro)">${taxaVit}%</span>
+      </div>
+      <div class="progress-bar" style="margin:0"><div class="progress-fill" style="width:${taxaVit}%"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="stat-box"><div class="stat-val" style="color:var(--laranja)">${melhorSeq}🔥</div><div class="stat-lbl">Melhor sequência</div></div>
+      <div class="stat-box"><div class="stat-val" style="color:var(--amarelo)">${hatCount}🎩</div><div class="stat-lbl">Hat-tricks</div></div>
+    </div>
+  `;
+}
+
+async function partilharCartao() {
+  if (!cartaoAtual) return;
+  const { nome, isSub, id } = cartaoAtual;
+
+  let est = null;
+  if (isSub || !id) {
+    const { data } = await db.from('substitutos').select('*').eq('nome', nome).maybeSingle();
+    est = data;
+  } else {
+    const { data } = await db.from('estatisticas_jogadores').select('*, jogadores(nome, rating)').eq('jogador_id', id).maybeSingle();
+    est = data;
+  }
+
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*');
+  const golosTotais = (partidas || []).reduce((sum, p) => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    return sum + (marc?.golos || 0);
+  }, 0);
+  let hatCount = 0;
+  (partidas || []).forEach(p => {
+    const marc = (p.marcadores || []).find(m => m.nome === nome);
+    if (marc && marc.golos >= 3) hatCount += Math.floor(marc.golos / 3);
+  });
+
+  const jogos = est?.jogos || 0, vitorias = est?.vitorias || 0, empates = est?.empates || 0, derrotas = est?.derrotas || 0;
+  const pontos = vitorias * 3 + empates;
+  const taxaVit = jogos > 0 ? Math.round((vitorias / jogos) * 100) : 0;
+  const melhorSeq = est?.melhor_sequencia || 0;
+  const rating = est?.rating || 3;
+
+  const canvas = document.getElementById('share-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 600; canvas.height = 420;
+  ctx.fillStyle = '#0d1f15'; ctx.fillRect(0, 0, 600, 420);
+  ctx.fillStyle = '#142a1c'; ctx.beginPath(); ctx.roundRect(20, 20, 560, 380, 16); ctx.fill();
+
+  // Header
+  ctx.fillStyle = '#8ab89a'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('FUTEBOLI', 300, 48);
+  ctx.fillStyle = '#25a865'; ctx.font = 'bold 18px system-ui';
+  ctx.fillText('Cartão do jogador', 300, 70);
+  ctx.strokeStyle = '#2a4a35'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(40, 82); ctx.lineTo(560, 82); ctx.stroke();
+
+  // Avatar
+  const avatarColor = isSub ? '#1a1a30' : '#0f4f2f';
+  const textColor = isSub ? '#8888cc' : '#25a865';
+  ctx.fillStyle = avatarColor; ctx.beginPath(); ctx.arc(300, 130, 40, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = textColor; ctx.font = 'bold 28px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText(iniciais(nome), 300, 140);
+
+  // Nome
+  ctx.fillStyle = '#e8f5ed'; ctx.font = 'bold 22px system-ui'; ctx.fillText(nome, 300, 184);
+  if (isSub) { ctx.fillStyle = '#8888cc'; ctx.font = '12px system-ui'; ctx.fillText('substituto', 300, 202); }
+
+  // Rating stars
+  const starSize = 18, totalStars = 5;
+  const starsWidth = totalStars * starSize + (totalStars - 1) * 4;
+  let sx = 300 - starsWidth / 2;
+  for (let i = 1; i <= 5; i++) {
+    ctx.fillStyle = i <= rating ? '#f0c030' : '#2a4a35';
+    ctx.font = `${starSize}px system-ui`; ctx.textAlign = 'left';
+    ctx.fillText('★', sx, 225); sx += starSize + 4;
+  }
+
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 235); ctx.lineTo(560, 235); ctx.stroke();
+
+  // Stats grid
+  const statsData = [
+    { val: pontos + 'pts', lbl: 'Pontos', x: 110 },
+    { val: jogos + 'J', lbl: 'Jogos', x: 220 },
+    { val: golosTotais + '⚽', lbl: 'Golos', x: 330 },
+    { val: vitorias + 'V', lbl: 'Vitórias', x: 440 },
+  ];
+  statsData.forEach(s => {
+    ctx.fillStyle = '#25a865'; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(s.val, s.x, 268);
+    ctx.fillStyle = '#8ab89a'; ctx.font = '11px system-ui';
+    ctx.fillText(s.lbl, s.x, 284);
+  });
+
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 296); ctx.lineTo(560, 296); ctx.stroke();
+
+  // Segunda linha stats
+  const stats2 = [
+    { val: taxaVit + '%', lbl: 'Taxa vitória', x: 140 },
+    { val: melhorSeq + '🔥', lbl: 'Melhor seq.', x: 300 },
+    { val: hatCount + '🎩', lbl: 'Hat-tricks', x: 460 },
+  ];
+  stats2.forEach(s => {
+    ctx.fillStyle = '#e8f5ed'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(s.val, s.x, 328);
+    ctx.fillStyle = '#8ab89a'; ctx.font = '11px system-ui';
+    ctx.fillText(s.lbl, s.x, 344);
+  });
+
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 358); ctx.lineTo(560, 358); ctx.stroke();
+  ctx.fillStyle = '#2a4a35'; ctx.font = '11px system-ui'; ctx.textAlign = 'right';
+  ctx.fillText('futeboli.github.io', 560, 388);
+
+  fecharModal('modal-cartao');
+  const img = canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML = `<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
+
+// ── HEAD-TO-HEAD ──
+let h2hSelecionados = [];
+
+function renderH2HSelecao() {
+  h2hSelecionados = [];
+  const todosJog = [
+    ...jogadores.map(j => ({ id: j.id, nome: j.nome, isSub: false })),
+    ...substitutosConhecidos.map(s => ({ id: null, nome: s.nome, isSub: true }))
+  ];
+  const container = document.getElementById('h2h-selecao');
+  if (!container) return;
+  container.innerHTML = todosJog.map(j =>
+    `<button class="chip" id="h2h-btn-${j.nome.replace(/\s/g,'_')}" onclick="selecionarH2H('${j.nome}',${j.isSub})"
+      style="cursor:pointer;padding:6px 12px;font-size:13px;background:var(--fundo3);border:1px solid var(--borda)">${j.nome}${j.isSub ? ' <span style='font-size:10px;color:#8888cc'>(sub)</span>' : ''}</button>`
+  ).join('');
+  document.getElementById('h2h-resultado').innerHTML = '<p style="font-size:13px;color:var(--texto2)">Seleciona dois jogadores para comparar.</p>';
+}
+
+async function selecionarH2H(nome, isSub) {
+  const btnId = 'h2h-btn-' + nome.replace(/\s/g, '_');
+  const btn = document.getElementById(btnId);
+
+  const idx = h2hSelecionados.findIndex(j => j.nome === nome);
+  if (idx >= 0) {
+    // Desselecionar
+    h2hSelecionados.splice(idx, 1);
+    if (btn) { btn.style.background = 'var(--fundo3)'; btn.style.borderColor = 'var(--borda)'; btn.style.color = 'var(--texto)'; }
+    document.getElementById('h2h-resultado').innerHTML = '<p style="font-size:13px;color:var(--texto2)">Seleciona dois jogadores para comparar.</p>';
+    return;
+  }
+  if (h2hSelecionados.length >= 2) return;
+
+  h2hSelecionados.push({ nome, isSub });
+  if (btn) { btn.style.background = 'var(--verde-escuro)'; btn.style.borderColor = 'var(--verde-claro)'; btn.style.color = 'var(--verde-claro)'; }
+
+  if (h2hSelecionados.length === 2) {
+    await calcularH2H();
+  }
+}
+
+async function calcularH2H() {
+  const [jA, jB] = h2hSelecionados;
+  document.getElementById('h2h-resultado').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*').order('criado_em', { ascending: false });
+
+  // Partidas onde ambos jogaram
+  const juntos = (partidas || []).filter(p => {
+    const todosA = [...(p.equipa_a?.jogadores || []), ...(p.equipa_b?.jogadores || [])];
+    return todosA.some(j => j.nome === jA.nome) && todosA.some(j => j.nome === jB.nome);
+  });
+
+  if (juntos.length === 0) {
+    document.getElementById('h2h-resultado').innerHTML = `<p style="font-size:13px;color:var(--texto2);text-align:center;padding:16px">Ainda não jogaram juntos.</p>`;
+    return;
+  }
+
+  let juntosVitA = 0, juntosVitB = 0, juntosEmp = 0;
+  let contraVitA = 0, contraVitB = 0, contraEmp = 0;
+  let golosA = 0, golosB = 0;
+
+  juntos.forEach(p => {
+    const eqA_nomes = (p.equipa_a?.jogadores || []).map(j => j.nome);
+    const eqB_nomes = (p.equipa_b?.jogadores || []).map(j => j.nome);
+    const aEmA = eqA_nomes.includes(jA.nome);
+    const bEmA = eqA_nomes.includes(jB.nome);
+    const mesmaEquipa = (aEmA && bEmA) || (!aEmA && !bEmA);
+
+    // Golos de cada um nesta partida
+    const marcA = (p.marcadores || []).find(m => m.nome === jA.nome);
+    const marcB = (p.marcadores || []).find(m => m.nome === jB.nome);
+    golosA += marcA?.golos || 0;
+    golosB += marcB?.golos || 0;
+
+    const vitA_eq = p.golos_a > p.golos_b;
+    const vitB_eq = p.golos_b > p.golos_a;
+    const empate = p.golos_a === p.golos_b;
+
+    if (mesmaEquipa) {
+      const aGanhou = aEmA ? vitA_eq : vitB_eq;
+      if (aGanhou) { juntosVitA++; juntosVitB++; }
+      else if (empate) { juntosEmp++; }
+      else { }
+    } else {
+      // Contra
+      const aGanhou = aEmA ? vitA_eq : vitB_eq;
+      if (empate) contraEmp++;
+      else if (aGanhou) contraVitA++;
+      else contraVitB++;
+    }
+  });
+
+  const juntosTotal = juntosVitA + juntosEmp + (juntos.length - juntosVitA - juntosEmp);
+  const contraTotal = contraVitA + contraVitB + contraEmp;
+
+  document.getElementById('h2h-resultado').innerHTML = `
+    <div style="background:var(--fundo3);border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--texto2);margin-bottom:10px">Total de jogos juntos: ${juntos.length}</div>
+      <div style="display:flex;justify-content:space-around;margin-bottom:12px">
+        <div style="text-align:center"><div style="font-size:22px;font-weight:800;color:var(--verde-claro)">${golosA}⚽</div><div style="font-size:11px;color:var(--texto2)">${jA.nome}</div></div>
+        <div style="text-align:center;color:var(--texto2);font-size:20px;font-weight:700;padding-top:4px">vs</div>
+        <div style="text-align:center"><div style="font-size:22px;font-weight:800;color:var(--laranja)">${golosB}⚽</div><div style="font-size:11px;color:var(--texto2)">${jB.nome}</div></div>
+      </div>
+      ${contraTotal > 0 ? `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--texto2);margin-bottom:8px">⚔️ Frente a frente (${contraTotal} jogos)</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <div style="text-align:center;min-width:40px"><div style="font-size:18px;font-weight:800;color:var(--verde-claro)">${contraVitA}</div><div style="font-size:10px;color:var(--texto2)">${jA.nome.split(' ')[0]}</div></div>
+        <div class="progress-bar" style="flex:1;margin:0;height:12px">
+          <div style="height:100%;display:flex;border-radius:20px;overflow:hidden">
+            <div style="background:var(--verde-claro);flex:${contraVitA}"></div>
+            <div style="background:var(--borda);flex:${contraEmp}"></div>
+            <div style="background:var(--laranja);flex:${contraVitB}"></div>
+          </div>
+        </div>
+        <div style="text-align:center;min-width:40px"><div style="font-size:18px;font-weight:800;color:var(--laranja)">${contraVitB}</div><div style="font-size:10px;color:var(--texto2)">${jB.nome.split(' ')[0]}</div></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--texto2);margin-top:4px">${contraEmp} empate${contraEmp !== 1 ? 's' : ''}</div>
+      ` : ''}
+      ${juntosVitA > 0 || juntosEmp > 0 ? `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--texto2);margin-top:10px;margin-bottom:4px">🤝 Na mesma equipa (${juntosVitA + juntosEmp} jogos)</div>
+      <div style="font-size:13px;color:var(--texto2)">${juntosVitA} vitórias juntos · ${juntosEmp} empates</div>
+      ` : ''}
+    </div>
+    <button class="btn btn-sec btn-full btn-sm" onclick="renderH2HSelecao()">↺ Nova comparação</button>
+  `;
+}
+
 </script>
 </body>
 </html>
