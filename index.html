@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fut5">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
 <title>Fut5 Manager</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -972,7 +973,7 @@ async function carregarRanking(){
   const hatTricks={};
   (todasPartidas||[]).forEach(p=>{
     (p.marcadores||[]).forEach(m=>{
-      if(m.golos>=3){ hatTricks[m.nome]=(hatTricks[m.nome]||0)+1; }
+      if(m.golos>=3){ hatTricks[m.nome]=(hatTricks[m.nome]||0)+Math.floor(m.golos/3); }
     });
   });
   const hatSorted=Object.entries(hatTricks).sort((a,b)=>b[1]-a[1]);
