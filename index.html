@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -163,7 +162,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 <body>
 
 <!-- LOGIN -->
-
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -182,7 +180,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- APP -->
-
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -200,7 +197,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- DASHBOARD -->
-
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -227,7 +223,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGO -->
-
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -260,7 +255,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- SCORE LIVE -->
-
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -299,7 +293,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGADORES -->
-
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -309,7 +302,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- CAIXA -->
-
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -341,14 +333,12 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- HISTÓRICO -->
-
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
-
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -360,10 +350,25 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
       <div class="card-title">⚽ Marcadores</div>
       <div id="r-marc"><div class="loading"><div class="spinner"></div></div></div>
     </div>
+    <div class="card" style="margin-top:4px">
+      <div class="card-title">🔥 Sequências de vitórias</div>
+      <div id="r-seq"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <div class="card" style="margin-top:4px">
+      <div class="card-title">🎩 Hat-tricks</div>
+      <div id="r-hat"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <div class="card" style="margin-top:4px">
+      <div class="card-title">💥 Maior goleada</div>
+      <div id="r-goleada"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-sec btn-full" onclick="partilharTabela()">📤 Partilhar tabela de classificação</button>
+      <button class="btn btn-sec btn-full" onclick="partilharResumoSemana()" style="margin-top:8px">📤 Partilhar resumo da semana</button>
+    </div>
   </div>
 
   <!-- STATS -->
-
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
@@ -388,7 +393,6 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAIS -->
-
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -785,6 +789,26 @@ async function guardarSubs(){
     await db.from('substitutos').update({rating:subStars}).eq('id',existente.id);
   }
   await carregarSubstitutos();
+  // Atualizar sequências
+  for(const j of [...partida.equipaA,...partida.equipaB]){
+    const isA=partida.equipaA.some(x=>(x.id||x.nome)===(j.id||j.nome));
+    const ganhou=isA?vitA:vitB;
+    if(j.id){
+      const{data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
+      if(est){
+        const novaSeq=ganhou?(est.sequencia_atual||0)+1:0;
+        const melhorSeq=Math.max(est.melhor_sequencia||0,novaSeq);
+        await db.from('estatisticas_jogadores').update({sequencia_atual:novaSeq,melhor_sequencia:melhorSeq}).eq('jogador_id',j.id);
+      }
+    } else {
+      const{data:sub}=await db.from('substitutos').select('*').eq('nome',j.nome).maybeSingle();
+      if(sub){
+        const novaSeq=ganhou?(sub.sequencia_atual||0)+1:0;
+        const melhorSeq=Math.max(sub.melhor_sequencia||0,novaSeq);
+        await db.from('substitutos').update({sequencia_atual:novaSeq,melhor_sequencia:melhorSeq}).eq('id',sub.id);
+      }
+    }
+  }
   await renderDash();
   fecharModal('modal-subs');renderJogo();
 }
@@ -902,9 +926,13 @@ async function confirmarEliminar(){
 async function carregarRanking(){
   document.getElementById('r-class').innerHTML='<div class="loading"><div class="spinner"></div></div>';
   document.getElementById('r-marc').innerHTML='<div class="loading"><div class="spinner"></div></div>';
-  const[{data:fixos},{data:subs}]=await Promise.all([
+  document.getElementById('r-seq').innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('r-hat').innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('r-goleada').innerHTML='<div class="loading"><div class="spinner"></div></div>';
+  const[{data:fixos},{data:subs},{data:todasPartidas}]=await Promise.all([
     db.from('estatisticas_jogadores').select('*, jogadores(nome)'),
-    db.from('substitutos').select('*').gt('jogos',0)
+    db.from('substitutos').select('*').gt('jogos',0),
+    db.from('jogos_scoreboard').select('*').order('criado_em',{ascending:false}).limit(50)
   ]);
   // Unificar fixos e substitutos
   const todos=[
@@ -929,6 +957,53 @@ async function carregarRanking(){
     marcHtml+=`<div class="rank-item"><div class="rank-pos ${cls}">${pos<=3?icons[pos-1]:pos}</div><div class="avatar" style="width:32px;height:32px;font-size:11px;${s.isSub?'background:#1a1a30;color:#8888cc':''}">${iniciais(s.nome)}</div><div class="rank-info"><div class="rank-nome">${s.nome}${badge}</div><div class="rank-stats">${s.jogos} jogos</div></div><div class="rank-golos">${s.golos}⚽</div></div>`;
   });
   document.getElementById('r-marc').innerHTML=marcHtml;
+
+  // Sequências
+  const todosSeq=[...(fixos||[]).map(s=>({nome:s.jogadores?.nome||'?',seq:s.sequencia_atual||0,melhor:s.melhor_sequencia||0,isSub:false})),...(subs||[]).map(s=>({nome:s.nome,seq:s.sequencia_atual||0,melhor:s.melhor_sequencia||0,isSub:true}))].filter(s=>s.melhor>0).sort((a,b)=>b.melhor-a.melhor);
+  let seqHtml=todosSeq.length===0?'<div class="empty">Sem sequências ainda.</div>':''  ;
+  todosSeq.forEach((s,i)=>{
+    const badge=s.isSub?'<span style="font-size:9px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:1px 5px;margin-left:4px">sub</span>':''
+    const atualStr=s.seq>0?`<span style="color:var(--verde-claro);font-size:11px;margin-left:6px">🔥 ${s.seq} atualmente</span>`:'';
+    seqHtml+=`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="avatar" style="width:32px;height:32px;font-size:11px">${iniciais(s.nome)}</div><div class="rank-info"><div class="rank-nome">${s.nome}${badge}</div><div class="rank-stats">Melhor: ${s.melhor} vitórias seguidas${atualStr}</div></div></div>`;
+  });
+  document.getElementById('r-seq').innerHTML=seqHtml;
+
+  // Hat-tricks — partidas com 3+ golos do mesmo jogador
+  const hatTricks={};
+  (todasPartidas||[]).forEach(p=>{
+    (p.marcadores||[]).forEach(m=>{
+      if(m.golos>=3){ hatTricks[m.nome]=(hatTricks[m.nome]||0)+1; }
+    });
+  });
+  const hatSorted=Object.entries(hatTricks).sort((a,b)=>b[1]-a[1]);
+  let hatHtml=hatSorted.length===0?'<div class="empty">Nenhum hat-trick ainda.</div>':''  ;
+  hatSorted.forEach(([nome,count],i)=>{
+    const icone=count>=3?'🎩🎩🎩':count>=2?'🎩🎩':'🎩';
+    hatHtml+=`<div class="rank-item"><div class="rank-pos">${i+1}</div><div class="avatar" style="width:32px;height:32px;font-size:11px">${iniciais(nome)}</div><div class="rank-info"><div class="rank-nome">${nome}</div><div class="rank-stats">${count} hat-trick${count>1?'s':''}</div></div><div style="font-size:20px">${icone}</div></div>`;
+  });
+  document.getElementById('r-hat').innerHTML=hatHtml;
+
+  // Maior goleada
+  let maiorGoleada=null,maiorDif=0;
+  (todasPartidas||[]).forEach(p=>{
+    const dif=Math.abs(p.golos_a-p.golos_b);
+    if(dif>maiorDif){maiorDif=dif;maiorGoleada=p;}
+  });
+  if(maiorGoleada){
+    const d=new Date(maiorGoleada.data+'T12:00:00').toLocaleDateString('pt-PT',{day:'numeric',month:'short',year:'numeric'});
+    const venceu=maiorGoleada.golos_a>maiorGoleada.golos_b?'Equipa A':'Equipa B';
+    const eqA=(maiorGoleada.equipa_a?.jogadores||[]).map(j=>j.nome).join(', ');
+    const eqB=(maiorGoleada.equipa_b?.jogadores||[]).map(j=>j.nome).join(', ');
+    document.getElementById('r-goleada').innerHTML=`
+      <div style="text-align:center;margin-bottom:10px">
+        <div style="font-size:32px;font-weight:900"><span style="color:var(--azul)">${maiorGoleada.golos_a}</span> <span style="color:var(--texto2)">—</span> <span style="color:var(--laranja)">${maiorGoleada.golos_b}</span></div>
+        <div style="font-size:12px;color:var(--texto2);margin-top:4px">${d} · Diferença de ${maiorDif} golos</div>
+      </div>
+      <div style="font-size:11px;color:var(--texto2)"><span style="color:var(--azul)">A:</span> ${eqA}</div>
+      <div style="font-size:11px;color:var(--texto2);margin-top:2px"><span style="color:var(--laranja)">B:</span> ${eqB}</div>`;
+  } else {
+    document.getElementById('r-goleada').innerHTML='<div class="empty">Sem partidas ainda.</div>';
+  }
 }
 
 // ── STATS ──
@@ -963,6 +1038,107 @@ async function carregarStats(){
   document.getElementById('stats-parceiros').innerHTML=parcHtml;
 }
 
+
+// ── PARTILHA TABELA ──
+async function partilharTabela(){
+  const[{data:fixos},{data:subs}]=await Promise.all([
+    db.from('estatisticas_jogadores').select('*, jogadores(nome)'),
+    db.from('substitutos').select('*').gt('jogos',0)
+  ]);
+  const todos=[...(fixos||[]).map(s=>({nome:s.jogadores?.nome||'?',pontos:s.vitorias*3+s.empates,jogos:s.jogos,vitorias:s.vitorias,empates:s.empates,derrotas:s.derrotas,golos:s.golos,isSub:false})),...(subs||[]).map(s=>({nome:s.nome,pontos:s.vitorias*3+s.empates,jogos:s.jogos,vitorias:s.vitorias,empates:s.empates,derrotas:s.derrotas,golos:s.golos,isSub:true}))].sort((a,b)=>b.pontos-a.pontos||b.golos-a.golos);
+  const linhas=todos.length;
+  const altTotal=100+linhas*44+40;
+  const canvas=document.getElementById('share-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=600;canvas.height=altTotal;
+  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,altTotal);
+  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,altTotal-40,16);ctx.fill();
+  ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('FUTEBOLI',300,44);
+  ctx.fillStyle='#25a865';ctx.font='bold 20px system-ui';ctx.fillText('Tabela de classificação',300,68);
+  ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,80);ctx.lineTo(560,80);ctx.stroke();
+  // Cabeçalho tabela
+  ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='left';ctx.fillText('Jogador',70,98);
+  ctx.textAlign='center';ctx.fillText('J',340,98);ctx.fillText('V',380,98);ctx.fillText('E',415,98);ctx.fillText('D',450,98);ctx.fillText('Pts',500,98);ctx.fillText('⚽',545,98);
+  const icons=['🥇','🥈','🥉'];
+  todos.forEach((s,i)=>{
+    const y=110+i*44;
+    ctx.fillStyle=i%2===0?'#142a1c':'#1c3826';ctx.fillRect(30,y,540,40);
+    // Posição
+    ctx.fillStyle=i<3?['#f0c030','#b0b8c0','#c87040'][i]:'#8ab89a';
+    ctx.font=i<3?'bold 14px system-ui':'13px system-ui';
+    ctx.textAlign='center';ctx.fillText(i<3?icons[i]:i+1,48,y+25);
+    // Nome
+    ctx.fillStyle='#e8f5ed';ctx.font=s.isSub?'italic 13px system-ui':'13px system-ui';
+    ctx.textAlign='left';ctx.fillText(s.nome+(s.isSub?' *':''),70,y+25);
+    // Stats
+    ctx.fillStyle='#8ab89a';ctx.font='13px system-ui';ctx.textAlign='center';
+    ctx.fillText(s.jogos,340,y+25);ctx.fillText(s.vitorias,380,y+25);ctx.fillText(s.empates,415,y+25);ctx.fillText(s.derrotas,450,y+25);
+    ctx.fillStyle='#25a865';ctx.font='bold 13px system-ui';ctx.fillText(s.pontos,500,y+25);
+    ctx.fillStyle='#8ab89a';ctx.font='13px system-ui';ctx.fillText(s.golos,545,y+25);
+  });
+  if(todos.some(s=>s.isSub)){
+    ctx.fillStyle='#8ab89a';ctx.font='italic 11px system-ui';ctx.textAlign='left';
+    ctx.fillText('* substituto',40,altTotal-25);
+  }
+  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='right';ctx.fillText('futeboli.github.io',560,altTotal-25);
+  const img=canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
+
+// ── PARTILHA RESUMO SEMANA ──
+async function partilharResumoSemana(){
+  const[{data:partidas},{data:fixos},{data:subs}]=await Promise.all([
+    db.from('jogos_scoreboard').select('*').order('criado_em',{ascending:false}).limit(1),
+    db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1),
+    db.from('substitutos').select('*').gt('golos',0).order('golos',{ascending:false}).limit(1)
+  ]);
+  const ultima=partidas?.[0];
+  if(!ultima){alert('Sem partidas ainda.');return;}
+  // MVP
+  const mvpFixo=fixos?.[0],mvpSub=subs?.[0];
+  let mvpNome='—';
+  if((mvpSub?.golos||0)>(mvpFixo?.golos||0)) mvpNome=mvpSub.nome;
+  else if(mvpFixo?.golos>0) mvpNome=mvpFixo.jogadores?.nome||'?';
+  // Hat-trick desta partida
+  const hats=(ultima.marcadores||[]).filter(m=>m.golos>=3);
+  const d=new Date(ultima.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
+  const vA=ultima.golos_a>ultima.golos_b,vB=ultima.golos_b>ultima.golos_a;
+  const canvas=document.getElementById('share-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=600;canvas.height=420;
+  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,420);
+  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,380,16);ctx.fill();
+  // Header
+  ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('FUTEBOLI',300,48);
+  ctx.fillStyle='#25a865';ctx.font='bold 20px system-ui';ctx.fillText('Resumo da semana',300,72);
+  ctx.fillStyle='#8ab89a';ctx.font='12px system-ui';ctx.fillText(d,300,90);
+  ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,100);ctx.lineTo(560,100);ctx.stroke();
+  // Resultado
+  ctx.fillStyle='#3080d0';ctx.font=`bold ${vA?64:48}px system-ui`;ctx.textAlign='center';ctx.fillText(ultima.golos_a,170,185);
+  ctx.fillStyle='#8ab89a';ctx.font='bold 24px system-ui';ctx.fillText('—',300,185);
+  ctx.fillStyle='#f07020';ctx.font=`bold ${vB?64:48}px system-ui`;ctx.fillText(ultima.golos_b,430,185);
+  ctx.fillStyle='#3080d0';ctx.font='11px system-ui';ctx.fillText('EQUIPA A',170,205);
+  ctx.fillStyle='#f07020';ctx.fillText('EQUIPA B',430,205);
+  ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,218);ctx.lineTo(560,218);ctx.stroke();
+  // Marcadores
+  const marcStr=(ultima.marcadores||[]).map(m=>`⚽ ${m.nome}${m.golos>1?' ×'+m.golos:''}`).join('   ');
+  ctx.fillStyle='#e8f5ed';ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillText(marcStr||'Sem golos',300,244);
+  ctx.strokeStyle='#2a4a35';ctx.beginPath();ctx.moveTo(40,258);ctx.lineTo(560,258);ctx.stroke();
+  // MVP
+  ctx.fillStyle='#f0c030';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('🏅 MVP DA SEMANA',300,282);
+  ctx.fillStyle='#e8f5ed';ctx.font='bold 18px system-ui';ctx.fillText(mvpNome,300,306);
+  // Hat-tricks
+  if(hats.length>0){
+    ctx.strokeStyle='#2a4a35';ctx.beginPath();ctx.moveTo(40,320);ctx.lineTo(560,320);ctx.stroke();
+    ctx.fillStyle='#f0c030';ctx.font='bold 12px system-ui';ctx.fillText('🎩 HAT-TRICK',300,340);
+    ctx.fillStyle='#e8f5ed';ctx.font='bold 16px system-ui';ctx.fillText(hats.map(h=>h.nome).join(', '),300,360);
+  }
+  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='right';ctx.fillText('futeboli.github.io',560,405);
+  const img=canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
 
 // ── PARTILHA MVP ──
 async function partilharMVP(){
@@ -1155,6 +1331,5 @@ async function exportarDados(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fut5-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
 </script>
-
 </body>
 </html>
