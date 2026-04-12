@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -162,6 +163,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 <body>
 
 <!-- LOGIN -->
+
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -180,6 +182,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- APP -->
+
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -197,6 +200,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- DASHBOARD -->
+
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -223,6 +227,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGO -->
+
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -255,6 +260,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- SCORE LIVE -->
+
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -293,6 +299,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGADORES -->
+
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -302,6 +309,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- CAIXA -->
+
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -333,12 +341,14 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- HISTÓRICO -->
+
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
+
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -353,6 +363,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- STATS -->
+
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
@@ -377,6 +388,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAIS -->
+
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -697,11 +709,23 @@ async function terminarPartida() {
   }
   const gA=partida.golosA,gB=partida.golosB,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
   for(const j of [...partida.equipaA,...partida.equipaB]){
-    if(!j.id)continue;
-    const isA=partida.equipaA.some(x=>x.id===j.id),golosJ=partida.marc[j.id]||0;
-    const {data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
-    if(est){await db.from('estatisticas_jogadores').update({golos:est.golos+golosJ,jogos:est.jogos+1,vitorias:est.vitorias+(isA?(vitA?1:0):(vitB?1:0)),derrotas:est.derrotas+(isA?(vitB?1:0):(vitA?1:0)),empates:est.empates+(emp?1:0)}).eq('jogador_id',j.id);}
-    else{await db.from('estatisticas_jogadores').insert({jogador_id:j.id,golos:golosJ,jogos:1,vitorias:isA?(vitA?1:0):(vitB?1:0),derrotas:isA?(vitB?1:0):(vitA?1:0),empates:emp?1:0});}
+    const key=j.id||j.nome;
+    const isA=partida.equipaA.some(x=>(x.id||x.nome)===(j.id||j.nome));
+    const golosJ=partida.marc[key]||0;
+    if(j.id){
+      // Jogador fixo
+      const{data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
+      if(est){await db.from('estatisticas_jogadores').update({golos:est.golos+golosJ,jogos:est.jogos+1,vitorias:est.vitorias+(isA?(vitA?1:0):(vitB?1:0)),derrotas:est.derrotas+(isA?(vitB?1:0):(vitA?1:0)),empates:est.empates+(emp?1:0)}).eq('jogador_id',j.id);}
+      else{await db.from('estatisticas_jogadores').insert({jogador_id:j.id,golos:golosJ,jogos:1,vitorias:isA?(vitA?1:0):(vitB?1:0),derrotas:isA?(vitB?1:0):(vitA?1:0),empates:emp?1:0});}
+    } else {
+      // Substituto — buscar directo da BD pelo nome
+      const{data:subAtual}=await db.from('substitutos').select('*').eq('nome',j.nome).maybeSingle();
+      if(subAtual){
+        await db.from('substitutos').update({golos:subAtual.golos+golosJ,jogos:subAtual.jogos+1,vitorias:subAtual.vitorias+(isA?(vitA?1:0):(vitB?1:0)),derrotas:subAtual.derrotas+(isA?(vitB?1:0):(vitA?1:0)),empates:subAtual.empates+(emp?1:0)}).eq('id',subAtual.id);
+      } else {
+        await db.from('substitutos').insert({nome:j.nome,rating:j.rating||3,golos:golosJ,jogos:1,vitorias:isA?(vitA?1:0):(vitB?1:0),derrotas:isA?(vitB?1:0):(vitA?1:0),empates:emp?1:0});
+      }
+    }
   }
   // Guardar dados para partilha
   sharePartidaData={golosA:partida.golosA,golosB:partida.golosB,marcadores:marcArr,data:dataJogo,eqA:partida.equipaA.map(j=>j.nome),eqB:partida.equipaB.map(j=>j.nome)};
@@ -1131,5 +1155,6 @@ async function exportarDados(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`fut5-backup-${new Date().toISOString().split('T')[0]}.json`;a.click();
 }
 </script>
+
 </body>
 </html>
