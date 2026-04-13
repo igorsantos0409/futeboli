@@ -300,6 +300,8 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
       <button class="btn btn-prim btn-sm" onclick="abrirModalJogador(null)">+ Novo</button>
     </div>
     <div id="lista-jogadores"><div class="loading"><div class="spinner"></div></div></div>
+    <div style="font-size:16px;font-weight:700;margin-top:20px;margin-bottom:12px">Substitutos conhecidos</div>
+    <div id="lista-substitutos"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- CAIXA -->
@@ -595,6 +597,7 @@ function showPage(id) {
   ['dashboard','jogo','score','jogadores','caixa','historico','ranking','stats'].forEach((p,i)=>{ if(p===id) document.querySelectorAll('.tab')[i].classList.add('active'); });
   if (id==='historico') carregarHistorico();
   if (id==='ranking') { carregarRanking(); renderH2HSelecao(); }
+  if (id==='jogadores') { renderJogadores(); }
   if (id==='caixa') renderCaixa();
   if (id==='stats') carregarStats();
 }
@@ -786,6 +789,32 @@ function renderJogadores() {
     <span onclick="abrirModalJogador('${j.id}')" style="font-size:18px;color:var(--borda);cursor:pointer">›</span>
   </div>`;});
   document.getElementById('lista-jogadores').innerHTML=html||'<div class="empty">Sem jogadores</div>';
+  renderSubstitutos();
+}
+
+function renderSubstitutos() {
+  const el = document.getElementById('lista-substitutos');
+  if (!el) return;
+  if (substitutosConhecidos.length === 0) {
+    el.innerHTML = '<div class="empty">Nenhum substituto ainda.</div>';
+    return;
+  }
+  let html = '';
+  substitutosConhecidos.forEach(s => {
+    html += `<div class="jogador-row">
+      <div class="avatar" style="background:#1a1a30;color:#8888cc">${iniciais(s.nome)}</div>
+      <div class="jogador-info" style="flex:1">
+        <div class="jogador-nome">${s.nome}</div>
+        <div style="margin-top:3px;display:flex;align-items:center;gap:8px">
+          ${stars(s.rating, 13)}
+          <span style="font-size:11px;color:var(--texto2)">${s.jogos || 0}J · ${s.golos || 0}⚽</span>
+        </div>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="abrirCartao(null,'${s.nome}',true)" style="margin-right:6px;padding:4px 8px;font-size:11px">🪪</button>
+      <button class="btn btn-danger btn-sm" onclick="eliminarSubstituto('${s.id}','${s.nome}')" style="padding:4px 8px;font-size:11px">×</button>
+    </div>`;
+  });
+  el.innerHTML = html;
 }
 function abrirModalJogador(id) {
   editStars=3; document.getElementById('mj-nome').value=''; document.getElementById('mj-id').value='';
@@ -796,6 +825,13 @@ function abrirModalJogador(id) {
 }
 async function guardarJogador(){const nome=document.getElementById('mj-nome').value.trim(),id=document.getElementById('mj-id').value;if(!nome){alert('Insere o nome.');return;}if(id)await db.from('jogadores').update({nome,rating:editStars}).eq('id',id);else await db.from('jogadores').insert({nome,rating:editStars,pago_mes:false});fecharModal('modal-jogador');await carregarJogadores();renderJogadores();renderDash();}
 async function eliminarJogador(){const id=document.getElementById('mj-id').value;if(!id||!confirm('Eliminar este jogador?'))return;await db.from('jogadores').delete().eq('id',id);fecharModal('modal-jogador');await carregarJogadores();renderJogadores();renderDash();}
+
+async function eliminarSubstituto(id, nome){
+  if(!confirm(`Eliminar ${nome} da lista de substitutos?`)) return;
+  await db.from('substitutos').delete().eq('id',id);
+  await carregarSubstitutos();
+  renderSubstitutos();
+}
 
 // ── SUBS ──
 function abrirModalSubs(){
