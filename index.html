@@ -6,9 +6,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fut5">
+<meta name="apple-mobile-web-app-title" content="Futeboli">
+<meta name="theme-color" content="#0d1f15">
+<meta name="description" content="Gestão do grupo de futebol — presenças, caixa, scoreboard e ranking">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
-<title>Fut5 Manager</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<title>Futeboli Manager</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -562,6 +566,15 @@ async function iniciarApp() {
   verificarNotificacoes();
 }
 db.auth.getSession().then(({ data }) => { if (data.session) iniciarApp(); });
+
+// Registar service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/futeboli/sw.js')
+      .then(r => console.log('SW registado:', r.scope))
+      .catch(e => console.log('SW erro:', e));
+  });
+}
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key==='Enter') fazerLogin(); });
 function togglePass() {
   const inp = document.getElementById('login-pass'), btn = document.getElementById('btn-pass-toggle');
