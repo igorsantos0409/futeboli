@@ -381,7 +381,10 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
-      <div class="card-title">📅 Assiduidade</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin:0">📅 Assiduidade</div>
+        <button class="btn btn-sec btn-sm" onclick="partilharAssiduidade()" style="padding:4px 8px;font-size:11px">📤</button>
+      </div>
       <div id="stats-assid"><div class="loading"><div class="spinner"></div></div></div>
     </div>
     <div class="card" style="margin-top:4px">
@@ -1121,6 +1124,81 @@ async function carregarStats(){
   document.getElementById('stats-parceiros').innerHTML=parcHtml;
 }
 
+
+// ── PARTILHA ASSIDUIDADE ──
+async function partilharAssiduidade(){
+  const{data:partScoreboard}=await db.from('jogos_scoreboard').select('equipa_a,equipa_b').order('criado_em',{ascending:false}).limit(50);
+  const totalJogos=partScoreboard?.length||0;
+  if(totalJogos===0){alert('Sem partidas registadas ainda.');return;}
+
+  const contagem={};
+  (partScoreboard||[]).forEach(p=>{
+    const todos=[...(p.equipa_a?.jogadores||[]),...(p.equipa_b?.jogadores||[])].map(j=>j.nome);
+    todos.forEach(n=>{contagem[n]=(contagem[n]||0)+1;});
+  });
+  const sorted=Object.entries(contagem).sort((a,b)=>b[1]-a[1]);
+
+  const linhas=sorted.length;
+  const altTotal=110+linhas*44+40;
+  const canvas=document.getElementById('share-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=600;canvas.height=altTotal;
+
+  // Fundo
+  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,altTotal);
+  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,altTotal-40,16);ctx.fill();
+
+  // Cabeçalho
+  ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='center';
+  ctx.fillText('FUTEBOLI',300,46);
+  ctx.fillStyle='#25a865';ctx.font='bold 20px system-ui';
+  ctx.fillText('Assiduidade',300,70);
+  ctx.fillStyle='#8ab89a';ctx.font='12px system-ui';
+  ctx.fillText(`${totalJogos} partidas registadas`,300,88);
+  ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,98);ctx.lineTo(560,98);ctx.stroke();
+
+  // Lista
+  sorted.forEach(([nome,count],i)=>{
+    const y=110+i*44;
+    const pct=Math.round((count/totalJogos)*100);
+    const barW=Math.round((count/totalJogos)*400);
+
+    // Fundo alternado
+    ctx.fillStyle=i%2===0?'#142a1c':'#1c3826';
+    ctx.fillRect(30,y,540,40);
+
+    // Posição
+    ctx.fillStyle='#8ab89a';ctx.font='bold 12px system-ui';ctx.textAlign='center';
+    ctx.fillText(i+1,50,y+25);
+
+    // Avatar
+    ctx.fillStyle='#0f4f2f';ctx.beginPath();ctx.arc(80,y+20,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#25a865';ctx.font='bold 11px system-ui';ctx.textAlign='center';
+    ctx.fillText(iniciais(nome),80,y+24);
+
+    // Nome
+    ctx.fillStyle='#e8f5ed';ctx.font='13px system-ui';ctx.textAlign='left';
+    ctx.fillText(nome,102,y+17);
+
+    // Barra de progresso
+    ctx.fillStyle='#0f4f2f';ctx.beginPath();ctx.roundRect(102,y+24,400,8,4);ctx.fill();
+    ctx.fillStyle=pct>=80?'#25a865':pct>=50?'#f0c030':'#e04040';
+    ctx.beginPath();ctx.roundRect(102,y+24,barW,8,4);ctx.fill();
+
+    // Percentagem
+    ctx.fillStyle='#8ab89a';ctx.font='11px system-ui';ctx.textAlign='right';
+    ctx.fillText(`${count}/${totalJogos} (${pct}%)`,556,y+17);
+  });
+
+  // Rodapé
+  ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,altTotal-30);ctx.lineTo(560,altTotal-30);ctx.stroke();
+  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='right';
+  ctx.fillText('futeboli.github.io',560,altTotal-14);
+
+  const img=canvas.toDataURL('image/png');
+  document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
+  document.getElementById('modal-share').classList.add('open');
+}
 
 // ── PARTILHA TABELA ──
 async function partilharTabela(){
