@@ -484,7 +484,13 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
     <div class="modal-handle"></div>
     <h3 id="cartao-titulo">Cartão do jogador</h3>
     <div id="cartao-conteudo"></div>
-    <div class="btn-row" style="margin-top:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-top:16px;margin-bottom:8px">
+      <span style="font-size:13px;color:var(--texto2)">Mostrar estrelas no cartão</span>
+      <button class="toggle-btn presente" id="toggle-estrelas" onclick="toggleEstrelas()" style="margin-left:auto">
+        <div class="toggle-dot"></div>
+      </button>
+    </div>
+    <div class="btn-row" style="margin-top:4px">
       <button class="btn btn-prim btn-full" onclick="partilharCartao()">📤 Partilhar cartão</button>
       <button class="btn btn-sec btn-full" onclick="fecharModal('modal-cartao')">Fechar</button>
     </div>
@@ -1410,6 +1416,7 @@ async function exportarDados(){
 
 // ── CARTÃO DE JOGADOR ──
 let cartaoAtual = null;
+let mostrarEstrelasCartao = true;
 
 async function abrirCartao(id, nome, isSub) {
   cartaoAtual = { id, nome, isSub };
@@ -1487,6 +1494,14 @@ async function abrirCartao(id, nome, isSub) {
   `;
 }
 
+function toggleEstrelas() {
+  mostrarEstrelasCartao = !mostrarEstrelasCartao;
+  const btn = document.getElementById('toggle-estrelas');
+  if (btn) {
+    btn.className = 'toggle-btn ' + (mostrarEstrelasCartao ? 'presente' : 'ausente');
+  }
+}
+
 async function partilharCartao() {
   if (!cartaoAtual) return;
   const { nome, isSub, id } = cartaoAtual;
@@ -1541,17 +1556,19 @@ async function partilharCartao() {
   ctx.fillStyle = '#e8f5ed'; ctx.font = 'bold 22px system-ui'; ctx.fillText(nome, 300, 184);
   if (isSub) { ctx.fillStyle = '#8888cc'; ctx.font = '12px system-ui'; ctx.fillText('substituto', 300, 202); }
 
-  // Rating stars
-  const starSize = 18, totalStars = 5;
-  const starsWidth = totalStars * starSize + (totalStars - 1) * 4;
-  let sx = 300 - starsWidth / 2;
-  for (let i = 1; i <= 5; i++) {
-    ctx.fillStyle = i <= rating ? '#f0c030' : '#2a4a35';
-    ctx.font = `${starSize}px system-ui`; ctx.textAlign = 'left';
-    ctx.fillText('★', sx, 225); sx += starSize + 4;
+  // Rating stars (só se activado)
+  if (mostrarEstrelasCartao) {
+    const starSize = 18, totalStars = 5;
+    const starsWidth = totalStars * starSize + (totalStars - 1) * 4;
+    let sx = 300 - starsWidth / 2;
+    for (let i = 1; i <= 5; i++) {
+      ctx.fillStyle = i <= rating ? '#f0c030' : '#2a4a35';
+      ctx.font = `${starSize}px system-ui`; ctx.textAlign = 'left';
+      ctx.fillText('★', sx, 225); sx += starSize + 4;
+    }
   }
 
-  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 235); ctx.lineTo(560, 235); ctx.stroke();
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, mostrarEstrelasCartao ? 235 : 210); ctx.lineTo(560, mostrarEstrelasCartao ? 235 : 210); ctx.stroke();
 
   // Stats grid
   const statsData = [
@@ -1560,14 +1577,15 @@ async function partilharCartao() {
     { val: golosTotais + '⚽', lbl: 'Golos', x: 330 },
     { val: vitorias + 'V', lbl: 'Vitórias', x: 440 },
   ];
+  const offset = mostrarEstrelasCartao ? 0 : -25;
   statsData.forEach(s => {
     ctx.fillStyle = '#25a865'; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText(s.val, s.x, 268);
+    ctx.fillText(s.val, s.x, 268 + offset);
     ctx.fillStyle = '#8ab89a'; ctx.font = '11px system-ui';
-    ctx.fillText(s.lbl, s.x, 284);
+    ctx.fillText(s.lbl, s.x, 284 + offset);
   });
 
-  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 296); ctx.lineTo(560, 296); ctx.stroke();
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 296 + offset); ctx.lineTo(560, 296 + offset); ctx.stroke();
 
   // Segunda linha stats
   const stats2 = [
@@ -1577,14 +1595,14 @@ async function partilharCartao() {
   ];
   stats2.forEach(s => {
     ctx.fillStyle = '#e8f5ed'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
-    ctx.fillText(s.val, s.x, 328);
+    ctx.fillText(s.val, s.x, 328 + offset);
     ctx.fillStyle = '#8ab89a'; ctx.font = '11px system-ui';
-    ctx.fillText(s.lbl, s.x, 344);
+    ctx.fillText(s.lbl, s.x, 344 + offset);
   });
 
-  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 358); ctx.lineTo(560, 358); ctx.stroke();
+  ctx.strokeStyle = '#2a4a35'; ctx.beginPath(); ctx.moveTo(40, 358 + offset); ctx.lineTo(560, 358 + offset); ctx.stroke();
   ctx.fillStyle = '#2a4a35'; ctx.font = '11px system-ui'; ctx.textAlign = 'right';
-  ctx.fillText('futeboli.github.io', 560, 388);
+  ctx.fillText('futeboli.github.io', 560, 388 + offset);
 
   fecharModal('modal-cartao');
   const img = canvas.toDataURL('image/png');
