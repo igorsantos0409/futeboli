@@ -477,6 +477,12 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
     <div class="modal-handle"></div>
     <h3>Partilhar resultado</h3>
     <div id="share-preview" style="margin-bottom:16px;border-radius:10px;overflow:hidden"></div>
+    <div id="share-estrelas-toggle" style="display:none;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:13px;color:var(--texto2)">Mostrar estrelas</span>
+      <button class="toggle-btn presente" id="toggle-estrelas-equipa" onclick="toggleEstrelasEquipa()" style="margin-left:auto">
+        <div class="toggle-dot"></div>
+      </button>
+    </div>
     <div class="btn-row">
       <button class="btn btn-prim btn-full" onclick="partilharImagem()">📤 Partilhar imagem</button>
       <button class="btn btn-sec btn-full" onclick="fecharModal('modal-share')">Fechar</button>
@@ -1210,7 +1216,9 @@ async function partilharAssiduidade(){
 
   const img=canvas.toDataURL('image/png');
   document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
-  document.getElementById('modal-share').classList.add('open');
+  if(!document.getElementById('modal-share').classList.contains('open')){
+    document.getElementById('modal-share').classList.add('open');
+  }
 }
 
 // ── PARTILHA TABELA ──
@@ -1280,9 +1288,11 @@ async function partilharResumoSemana(){
   const vA=ultima.golos_a>ultima.golos_b,vB=ultima.golos_b>ultima.golos_a;
   const canvas=document.getElementById('share-canvas');
   const ctx=canvas.getContext('2d');
-  canvas.width=600;canvas.height=420;
-  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,420);
-  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,380,16);ctx.fill();
+  const temHat=hats.length>0;
+  const altResumo=hats.length>0?460:420;
+  canvas.width=600;canvas.height=altResumo;
+  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,altResumo);
+  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,altResumo-40,16);ctx.fill();
   // Header
   ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('FUTEBOLI',300,48);
   ctx.fillStyle='#25a865';ctx.font='bold 20px system-ui';ctx.fillText('Resumo da semana',300,72);
@@ -1295,9 +1305,25 @@ async function partilharResumoSemana(){
   ctx.fillStyle='#3080d0';ctx.font='11px system-ui';ctx.fillText('EQUIPA A',170,205);
   ctx.fillStyle='#f07020';ctx.fillText('EQUIPA B',430,205);
   ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,218);ctx.lineTo(560,218);ctx.stroke();
-  // Marcadores
-  const marcStr=(ultima.marcadores||[]).map(m=>`⚽ ${m.nome}${m.golos>1?' ×'+m.golos:''}`).join('   ');
-  ctx.fillStyle='#e8f5ed';ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillText(marcStr||'Sem golos',300,244);
+  // Marcadores — dividir em linhas se necessário
+  const marcArr=(ultima.marcadores||[]).map(m=>`⚽ ${m.nome}${m.golos>1?' ×'+m.golos:''}`);
+  ctx.fillStyle='#e8f5ed';ctx.font='13px system-ui';ctx.textAlign='center';
+  if(marcArr.length===0){
+    ctx.fillText('Sem golos',300,244);
+  } else {
+    // Dividir em linhas de max 480px
+    const linhasMarc=[];
+    let linhaAtual='';
+    for(const m of marcArr){
+      const teste=linhaAtual?linhaAtual+'   '+m:m;
+      if(ctx.measureText(teste).width>480&&linhaAtual){
+        linhasMarc.push(linhaAtual);linhaAtual=m;
+      } else {linhaAtual=teste;}
+    }
+    if(linhaAtual)linhasMarc.push(linhaAtual);
+    linhasMarc.forEach((l,i)=>ctx.fillText(l,300,240+i*18));
+  }
+  const marcLinhas=Math.max(1,(ultima.marcadores||[]).length>4?2:1);
   ctx.strokeStyle='#2a4a35';ctx.beginPath();ctx.moveTo(40,258);ctx.lineTo(560,258);ctx.stroke();
   // MVP
   ctx.fillStyle='#f0c030';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('🏅 MVP DA SEMANA',300,282);
@@ -1358,6 +1384,17 @@ async function partilharMVP(){
 }
 
 // ── PARTILHA EQUIPAS ──
+let mostrarEstrelasEquipa = true;
+let _dadosEquipaAtual = null;
+
+function toggleEstrelasEquipa() {
+  mostrarEstrelasEquipa = !mostrarEstrelasEquipa;
+  const btn = document.getElementById('toggle-estrelas-equipa');
+  if (btn) btn.className = 'toggle-btn ' + (mostrarEstrelasEquipa ? 'presente' : 'ausente');
+  // Re-gerar a imagem
+  if (_dadosEquipaAtual) gerarImagemEquipas(_dadosEquipaAtual);
+}
+
 function partilharEquipas(){
   if(!partida.equipaA||partida.equipaA.length===0){alert('Sorteia as equipas primeiro.');return;}
   const eqA=partida.equipaA, eqB=partida.equipaB;
@@ -1417,6 +1454,8 @@ function partilharEquipas(){
 // ── PARTILHA ──
 function abrirShare(dados){sharePartidaData=dados;abrirShareModal();}
 function abrirShareModal(){
+  const t=document.getElementById('share-estrelas-toggle');
+  if(t) t.style.display='none';
   if(!sharePartidaData)return;
   const p=sharePartidaData;
   const canvas=document.getElementById('share-canvas');
