@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -167,6 +168,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 <body>
 
 <!-- LOGIN -->
+
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">Fut<span>5</span></div>
@@ -185,6 +187,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- APP -->
+
 <div id="app-screen">
   <div class="nav">
     <div class="nav-logo">Fut<span>5</span></div>
@@ -202,6 +205,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- DASHBOARD -->
+
   <div class="page active" id="page-dashboard">
     <div class="stats-row">
       <div class="stat-box"><div class="stat-val" id="d-jog">-</div><div class="stat-lbl">Jogadores</div></div>
@@ -228,6 +232,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGO -->
+
   <div class="page" id="page-jogo">
     <div class="card">
       <div class="card-title">Data do jogo</div>
@@ -260,6 +265,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- SCORE LIVE -->
+
   <div class="page" id="page-score">
     <div id="score-setup">
       <div class="card">
@@ -298,6 +304,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- JOGADORES -->
+
   <div class="page" id="page-jogadores">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div style="font-size:16px;font-weight:700">Jogadores fixos</div>
@@ -309,6 +316,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- CAIXA -->
+
   <div class="page" id="page-caixa">
     <div class="caixa-display">
       <div class="caixa-val" id="c-total">-</div>
@@ -340,12 +348,14 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- HISTÓRICO -->
+
   <div class="page" id="page-historico">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Histórico de partidas</div>
     <div id="lista-historico"><div class="loading"><div class="spinner"></div></div></div>
   </div>
 
   <!-- RANKING -->
+
   <div class="page" id="page-ranking">
     <div style="font-size:16px;font-weight:700;margin-bottom:4px">Ranking geral</div>
     <div style="font-size:12px;color:var(--texto2);margin-bottom:14px">Vitória = 3pts · Empate = 1pt</div>
@@ -382,6 +392,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 
   <!-- STATS -->
+
   <div class="page" id="page-stats">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px">Estatísticas avançadas</div>
     <div class="card">
@@ -409,6 +420,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAIS -->
+
 <div class="modal-bg" id="modal-jogador">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -490,8 +502,8 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
   </div>
 </div>
 
-
 <!-- MODAL CARTÃO JOGADOR -->
+
 <div class="modal-bg" id="modal-cartao">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -511,6 +523,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
 </div>
 
 <!-- MODAL HEAD-TO-HEAD -->
+
 <div class="modal-bg" id="modal-h2h">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1460,10 +1473,30 @@ function abrirShareModal(){
   const p=sharePartidaData;
   const canvas=document.getElementById('share-canvas');
   const ctx=canvas.getContext('2d');
-  canvas.width=600;canvas.height=380;
+
+  // Calcular marcadores em múltiplas linhas
+  ctx.font='13px system-ui';
+  const marcadores=p.marcadores||[];
+  const marcItems=marcadores.map(m=>'⚽ '+m.nome+(m.golos>1?` ×${m.golos}`:''));
+  const linhasMarcadores=[];
+  if(marcItems.length>0){
+    let linha='';
+    for(const m of marcItems){
+      const teste=linha?linha+'   '+m:m;
+      if(ctx.measureText(teste).width>500&&linha){linhasMarcadores.push(linha);linha=m;}
+      else linha=teste;
+    }
+    if(linha)linhasMarcadores.push(linha);
+  }
+
+  // Altura dinâmica
+  const altMarcadores=linhasMarcadores.length*20;
+  const altTotal=380+Math.max(0,altMarcadores-20);
+  canvas.width=600;canvas.height=altTotal;
+
   // Fundo
-  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,380);
-  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,340,16);ctx.fill();
+  ctx.fillStyle='#0d1f15';ctx.fillRect(0,0,600,altTotal);
+  ctx.fillStyle='#142a1c';ctx.beginPath();ctx.roundRect(20,20,560,altTotal-40,16);ctx.fill();
   // Título
   ctx.fillStyle='#8ab89a';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText('FUTEBOLI',300,55);
   ctx.fillStyle='#25a865';ctx.font='bold 22px system-ui';ctx.textAlign='center';ctx.fillText('Resultado da partida',300,78);
@@ -1477,19 +1510,21 @@ function abrirShareModal(){
   ctx.fillStyle='#f07020';ctx.font='bold 72px system-ui';ctx.fillText(p.golosB,440,200);
   ctx.fillStyle='#3080d0';ctx.font='12px system-ui';ctx.fillText('EQUIPA A',160,225);
   ctx.fillStyle='#f07020';ctx.fillText('EQUIPA B',440,225);
-  // Marcadores
-  if(p.marcadores&&p.marcadores.length>0){
+  // Marcadores — múltiplas linhas
+  if(linhasMarcadores.length>0){
     ctx.fillStyle='#8ab89a';ctx.font='13px system-ui';ctx.textAlign='center';
-    const marcStr='⚽ '+p.marcadores.map(m=>m.nome+(m.golos>1?` ×${m.golos}`:'')).join('  ⚽ ');
-    ctx.fillText(marcStr,300,260);
+    linhasMarcadores.forEach((l,i)=>ctx.fillText(l,300,252+i*20));
   }
+  const yBase=252+altMarcadores;
+  // Linha separadora
+  ctx.strokeStyle='#2a4a35';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(40,yBase+4);ctx.lineTo(560,yBase+4);ctx.stroke();
   // Equipas
   ctx.fillStyle='#3080d0';ctx.font='11px system-ui';ctx.textAlign='left';
-  ctx.fillText('A: '+(p.eqA||[]).join(', '),40,300);
+  ctx.fillText('A: '+(p.eqA||[]).join(', '),40,yBase+20);
   ctx.fillStyle='#f07020';
-  ctx.fillText('B: '+(p.eqB||[]).join(', '),40,320);
+  ctx.fillText('B: '+(p.eqB||[]).join(', '),40,yBase+36);
   // Rodapé
-  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('futeboli.github.io',300,360);
+  ctx.fillStyle='#2a4a35';ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillText('futeboli.github.io',300,altTotal-16);
   // Preview
   const img=canvas.toDataURL('image/png');
   document.getElementById('share-preview').innerHTML=`<img src="${img}" style="width:100%;border-radius:10px">`;
@@ -1868,5 +1903,6 @@ async function calcularH2H() {
 }
 
 </script>
+
 </body>
 </html>
