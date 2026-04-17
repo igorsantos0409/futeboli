@@ -267,7 +267,7 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
         <p style="font-size:13px;color:var(--texto2);margin-bottom:12px">Configura as equipas e regista os golos em tempo real.</p>
         <button class="btn btn-prim btn-full" onclick="iniciarConfigPartida()">Configurar equipas</button>
         <div id="operador-aviso" style="display:none;margin-top:12px;background:#2a2a3a;border:1px solid #4a4a6a;border-radius:10px;padding:12px;font-size:13px;color:#8888cc;text-align:center">
-          🎮 Modo operador — podes gerir os golos.<br>O administrador termina e guarda a partida.
+          🎮 Modo operador — gere os golos e termina a partida quando acabar.
         </div>
       </div>
     </div>
@@ -775,9 +775,7 @@ function confirmarEquipas() {
 function renderScoreLive() {
   document.getElementById('score-setup').style.display='none';
   document.getElementById('score-live').style.display='block';
-  // Esconder botão Terminar para operador
-  const btnTerminar=document.querySelector('#score-live .btn-laranja');
-  if(btnTerminar) btnTerminar.style.display=isOperador?'none':'block';
+
   document.getElementById('live-a').textContent=partida.golosA;
   document.getElementById('live-b').textContent=partida.golosB;
   const fmtEq=(eq,lado)=>eq.map(j=>{
@@ -798,11 +796,6 @@ function ajGolo(key,lado,delta) {
 function resetarPartida(){if(!confirm('Reiniciar os golos?'))return;partida.golosA=0;partida.golosB=0;Object.keys(partida.marc).forEach(k=>partida.marc[k]=0);renderScoreLive();}
 async function terminarPartida() {
   if(!confirm(`Terminar partida?\nEquipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
-  if(isOperador){
-    // Operador só pode registar golos, não terminar — só admin termina
-    alert('Só o administrador pode terminar e guardar a partida.');
-    return;
-  }
   const marcArr=[];
   [...partida.equipaA,...partida.equipaB].forEach(j=>{const key=j.id||j.nome,g=partida.marc[key]||0;if(g>0)marcArr.push({nome:j.nome,id:j.id||null,golos:g});});
   const dataJogo=jogoAtual.data||new Date().toISOString().split('T')[0];
