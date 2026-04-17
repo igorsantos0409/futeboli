@@ -13,7 +13,81 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
 <title>Futeboli Manager</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ── SINCRONIZAÇÃO JOGO LIVE ──
+let jogoLiveChannel = null;
+
+async function sincronizarJogoLive() {
+  // Construir array de marcadores a partir do marc
+  const marcArr = [];
+  [...partida.equipaA, ...partida.equipaB].forEach(j => {
+    const key = j.id || j.nome;
+    const g = partida.marc[key] || 0;
+    if (g > 0) marcArr.push({ nome: j.nome, id: j.id || null, golos: g });
+  });
+  await db.from('jogo_live').update({
+    equipa_a: { jogadores: partida.equipaA.map(j => ({ id: j.id||null, nome: j.nome, rating: j.rating||3 })) },
+    equipa_b: { jogadores: partida.equipaB.map(j => ({ id: j.id||null, nome: j.nome, rating: j.rating||3 })) },
+    golos_a: partida.golosA,
+    golos_b: partida.golosB,
+    marcadores: marcArr,
+    ativo: true,
+    atualizado_em: new Date().toISOString()
+  }).eq('id', 1);
+}
+
+async function carregarJogoLive() {
+  const { data } = await db.from('jogo_live').select('*').eq('id', 1).single();
+  if (!data || !data.ativo) return false;
+  const eqA = (data.equipa_a?.jogadores || []);
+  const eqB = (data.equipa_b?.jogadores || []);
+  if (eqA.length === 0 && eqB.length === 0) return false;
+  partida.equipaA = eqA;
+  partida.equipaB = eqB;
+  partida.golosA = data.golos_a || 0;
+  partida.golosB = data.golos_b || 0;
+  partida.marc = {};
+  [...eqA, ...eqB].forEach(j => { partida.marc[j.id || j.nome] = 0; });
+  (data.marcadores || []).forEach(m => { partida.marc[m.id || m.nome] = m.golos; });
+  return true;
+}
+
+function subscreverJogoLive() {
+  if (jogoLiveChannel) jogoLiveChannel.unsubscribe();
+  jogoLiveChannel = db.channel('jogo_live_changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jogo_live' }, payload => {
+      const data = payload.new;
+      if (!data.ativo) {
+        // Jogo terminou
+        if (document.getElementById('score-live').style.display !== 'none') {
+          document.getElementById('score-setup').style.display = 'block';
+          document.getElementById('score-live').style.display = 'none';
+          partida = { equipaA: [], equipaB: [], golosA: 0, golosB: 0, marc: {} };
+        }
+        return;
+      }
+      const eqA = data.equipa_a?.jogadores || [];
+      const eqB = data.equipa_b?.jogadores || [];
+      if (eqA.length === 0) return;
+      // Atualizar estado local
+      partida.equipaA = eqA;
+      partida.equipaB = eqB;
+      partida.golosA = data.golos_a || 0;
+      partida.golosB = data.golos_b || 0;
+      partida.marc = {};
+      [...eqA, ...eqB].forEach(j => { partida.marc[j.id || j.nome] = 0; });
+      (data.marcadores || []).forEach(m => { partida.marc[m.id || m.nome] = m.golos; });
+      // Se o score-live não está visível, mostrar automaticamente
+      if (document.getElementById('score-live').style.display === 'none') {
+        document.getElementById('score-setup').style.display = 'none';
+        document.getElementById('score-live').style.display = 'block';
+      }
+      renderScoreLive();
+    })
+    .subscribe();
+}
+
+</script>
 <style>
 :root {
   --verde:#1a7a4a;--verde-claro:#25a865;--verde-escuro:#0f4f2f;
@@ -597,10 +671,20 @@ async function iniciarApp() {
     // Mostrar aviso operador
     const aviso = document.getElementById('operador-aviso');
     if (aviso) aviso.style.display = 'block';
+    // Carregar jogo live e subscrever atualizações
+    const jogoAtivo = await carregarJogoLive();
+    if (jogoAtivo) {
+      document.getElementById('score-setup').style.display = 'none';
+      document.getElementById('score-live').style.display = 'block';
+      renderScoreLive();
+    }
+    subscreverJogoLive();
   } else {
     await Promise.all([carregarJogadores(), carregarMovimentos(), carregarSubstitutos()]);
     renderDash(); renderJogo(); renderJogadores(); renderCaixa();
     verificarNotificacoes();
+    // Subscrever atualizações em tempo real
+    subscreverJogoLive();
   }
 }
 db.auth.getSession().then(({ data }) => { if (data.session) iniciarApp(); });
@@ -766,11 +850,13 @@ function mover(idOuNome,de,para) {
   const [j]=lista.splice(idx,1); (para==='a'?cfg.a:para==='b'?cfg.b:cfg.sem).push(j);
   renderCfgEquipas();
 }
-function confirmarEquipas() {
+async function confirmarEquipas() {
   if(cfg.a.length===0||cfg.b.length===0){alert('Cada equipa precisa de pelo menos 1 jogador.');return;}
   partida={equipaA:cfg.a,equipaB:cfg.b,golosA:0,golosB:0,marc:{}};
   [...cfg.a,...cfg.b].forEach(j=>{partida.marc[j.id||j.nome]=0;});
-  fecharModal('modal-equipas'); renderScoreLive();
+  fecharModal('modal-equipas');
+  await sincronizarJogoLive();
+  renderScoreLive();
 }
 function renderScoreLive() {
   document.getElementById('score-setup').style.display='none';
@@ -792,8 +878,9 @@ function ajGolo(key,lado,delta) {
   if(lado==='a') partida.golosA=Math.max(0,partida.golosA+diff);
   else partida.golosB=Math.max(0,partida.golosB+diff);
   renderScoreLive();
+  sincronizarJogoLive();
 }
-function resetarPartida(){if(!confirm('Reiniciar os golos?'))return;partida.golosA=0;partida.golosB=0;Object.keys(partida.marc).forEach(k=>partida.marc[k]=0);renderScoreLive();}
+async function resetarPartida(){if(!confirm('Reiniciar os golos?'))return;partida.golosA=0;partida.golosB=0;Object.keys(partida.marc).forEach(k=>partida.marc[k]=0);renderScoreLive();await sincronizarJogoLive();}
 async function terminarPartida() {
   if(!confirm(`Terminar partida?\nEquipa A ${partida.golosA} — ${partida.golosB} Equipa B`))return;
   const marcArr=[];
@@ -833,6 +920,8 @@ async function terminarPartida() {
   document.getElementById('score-setup').style.display='block';
   document.getElementById('score-live').style.display='none';
   partida={equipaA:[],equipaB:[],golosA:0,golosB:0,marc:{}};
+  // Limpar jogo_live
+  await db.from('jogo_live').update({ativo:false,equipa_a:null,equipa_b:null,golos_a:0,golos_b:0,marcadores:[]}).eq('id',1);
   await renderDash();
   // Perguntar se quer partilhar
   if(confirm('Partida guardada! ✓\n\nQueres partilhar o resultado?')) abrirShareModal();
@@ -1443,40 +1532,36 @@ function partilharEquipas(){
     ctx.fillStyle='#142a1c'; ctx.beginPath(); ctx.roundRect(20,20,560,altTotal-40,16); ctx.fill();
     // Título
     ctx.fillStyle='#25a865'; ctx.font='bold 22px system-ui'; ctx.textAlign='center';
-    ctx.fillText('Fut5 — Equipas de hoje',300,58);
+    ctx.fillText('Equipas de hoje',300,58);
     const d=jogoAtual.data?new Date(jogoAtual.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'}):'';
     ctx.fillStyle='#8ab89a'; ctx.font='12px system-ui'; ctx.fillText(d,300,78);
     // Linha
     ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,90); ctx.lineTo(560,90); ctx.stroke();
     // Equipa A
     let y=115;
-    ctx.fillStyle='#3080d0'; ctx.font='bold 14px system-ui'; ctx.textAlign='left'; ctx.fillText('● EQUIPA A',40,y);
+    ctx.fillStyle='#3080d0'; ctx.font='bold 14px system-ui'; ctx.textAlign='center'; ctx.fillText('● EQUIPA A',300,y);
 
     y+=14;
     eqA.forEach(j=>{
       y+=8;
       ctx.fillStyle='#102040'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
-      ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
-      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
+      ctx.fillStyle='#e8f5ed'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText(j.nome,300,y+19);
       y+=28;
     });
     y+=16;
     ctx.strokeStyle='#2a4a35'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(560,y); ctx.stroke();
     y+=20;
-    ctx.fillStyle='#f07020'; ctx.font='bold 14px system-ui'; ctx.textAlign='left'; ctx.fillText('● EQUIPA B',40,y);
+    ctx.fillStyle='#f07020'; ctx.font='bold 14px system-ui'; ctx.textAlign='center'; ctx.fillText('● EQUIPA B',300,y);
 
     y+=14;
     eqB.forEach(j=>{
       y+=8;
       ctx.fillStyle='#3a1a00'; ctx.beginPath(); ctx.roundRect(40,y,520,28,7); ctx.fill();
-      ctx.fillStyle='#e8f5ed'; ctx.font='13px system-ui'; ctx.textAlign='left'; ctx.fillText(j.nome,56,y+19);
-      let st=''; for(let k=1;k<=5;k++) st+=(k<=(j.rating||3)?'★':'☆');
-      ctx.fillStyle='#f0c030'; ctx.font='12px system-ui'; ctx.textAlign='right'; ctx.fillText(st,556,y+19);
+      ctx.fillStyle='#e8f5ed'; ctx.font='14px system-ui'; ctx.textAlign='center'; ctx.fillText(j.nome,300,y+19);
       y+=28;
     });
     y+=20;
-    ctx.fillStyle='#2a4a35'; ctx.font='11px system-ui'; ctx.textAlign='center'; ctx.fillText('Fut5 Manager',300,y+10);
+    ctx.fillStyle='#2a4a35'; ctx.font='11px system-ui'; ctx.textAlign='center'; ctx.fillText('futeboli.github.io',300,y+10);
   };
   desenhar();
   const img=canvas.toDataURL('image/png');
@@ -1920,6 +2005,80 @@ async function calcularH2H() {
     </div>
     <button class="btn btn-sec btn-full btn-sm" onclick="renderH2HSelecao()">↺ Nova comparação</button>
   `;
+}
+
+
+// ── SINCRONIZAÇÃO JOGO LIVE ──
+let jogoLiveChannel = null;
+
+async function sincronizarJogoLive() {
+  // Construir array de marcadores a partir do marc
+  const marcArr = [];
+  [...partida.equipaA, ...partida.equipaB].forEach(j => {
+    const key = j.id || j.nome;
+    const g = partida.marc[key] || 0;
+    if (g > 0) marcArr.push({ nome: j.nome, id: j.id || null, golos: g });
+  });
+  await db.from('jogo_live').update({
+    equipa_a: { jogadores: partida.equipaA.map(j => ({ id: j.id||null, nome: j.nome, rating: j.rating||3 })) },
+    equipa_b: { jogadores: partida.equipaB.map(j => ({ id: j.id||null, nome: j.nome, rating: j.rating||3 })) },
+    golos_a: partida.golosA,
+    golos_b: partida.golosB,
+    marcadores: marcArr,
+    ativo: true,
+    atualizado_em: new Date().toISOString()
+  }).eq('id', 1);
+}
+
+async function carregarJogoLive() {
+  const { data } = await db.from('jogo_live').select('*').eq('id', 1).single();
+  if (!data || !data.ativo) return false;
+  const eqA = (data.equipa_a?.jogadores || []);
+  const eqB = (data.equipa_b?.jogadores || []);
+  if (eqA.length === 0 && eqB.length === 0) return false;
+  partida.equipaA = eqA;
+  partida.equipaB = eqB;
+  partida.golosA = data.golos_a || 0;
+  partida.golosB = data.golos_b || 0;
+  partida.marc = {};
+  [...eqA, ...eqB].forEach(j => { partida.marc[j.id || j.nome] = 0; });
+  (data.marcadores || []).forEach(m => { partida.marc[m.id || m.nome] = m.golos; });
+  return true;
+}
+
+function subscreverJogoLive() {
+  if (jogoLiveChannel) jogoLiveChannel.unsubscribe();
+  jogoLiveChannel = db.channel('jogo_live_changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jogo_live' }, payload => {
+      const data = payload.new;
+      if (!data.ativo) {
+        // Jogo terminou
+        if (document.getElementById('score-live').style.display !== 'none') {
+          document.getElementById('score-setup').style.display = 'block';
+          document.getElementById('score-live').style.display = 'none';
+          partida = { equipaA: [], equipaB: [], golosA: 0, golosB: 0, marc: {} };
+        }
+        return;
+      }
+      const eqA = data.equipa_a?.jogadores || [];
+      const eqB = data.equipa_b?.jogadores || [];
+      if (eqA.length === 0) return;
+      // Atualizar estado local
+      partida.equipaA = eqA;
+      partida.equipaB = eqB;
+      partida.golosA = data.golos_a || 0;
+      partida.golosB = data.golos_b || 0;
+      partida.marc = {};
+      [...eqA, ...eqB].forEach(j => { partida.marc[j.id || j.nome] = 0; });
+      (data.marcadores || []).forEach(m => { partida.marc[m.id || m.nome] = m.golos; });
+      // Se o score-live não está visível, mostrar automaticamente
+      if (document.getElementById('score-live').style.display === 'none') {
+        document.getElementById('score-setup').style.display = 'none';
+        document.getElementById('score-live').style.display = 'block';
+      }
+      renderScoreLive();
+    })
+    .subscribe();
 }
 
 </script>
