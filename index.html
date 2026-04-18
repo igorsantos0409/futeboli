@@ -344,6 +344,13 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
           🎮 Modo operador — gere os golos e termina a partida quando acabar.
         </div>
       </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="card-title" style="margin:0">Substitutos (3€ cada)</div>
+          <button class="btn btn-sec btn-sm" onclick="abrirModalSubs()">+ Adicionar</button>
+        </div>
+        <div id="score-subs-lista"></div>
+      </div>
     </div>
     <div id="score-live" style="display:none">
       <div class="card">
@@ -886,14 +893,18 @@ async function terminarPartida() {
   const marcArr=[];
   [...partida.equipaA,...partida.equipaB].forEach(j=>{const key=j.id||j.nome,g=partida.marc[key]||0;if(g>0)marcArr.push({nome:j.nome,id:j.id||null,golos:g});});
   const dataJogo=jogoAtual.data||new Date().toISOString().split('T')[0];
+  // Identificar substitutos nas equipas (jogadores sem id)
+  const subsNasEquipas=[...partida.equipaA,...partida.equipaB].filter(j=>!j.id);
+  // Também incluir subs do jogoAtual que não estejam já nas equipas
+  const todosSubsNomes=new Set(subsNasEquipas.map(j=>j.nome));
+  (jogoAtual.subs||[]).forEach(s=>{if(!todosSubsNomes.has(s.nome))subsNasEquipas.push(s);});
   const { data: novaPartida } = await db.from('jogos_scoreboard').insert({data:dataJogo,equipa_a:{jogadores:partida.equipaA.map(j=>({id:j.id||null,nome:j.nome}))},equipa_b:{jogadores:partida.equipaB.map(j=>({id:j.id||null,nome:j.nome}))},golos_a:partida.golosA,golos_b:partida.golosB,marcadores:marcArr}).select().single();
-  // Ligar o movimento de substitutos à partida pelo ID
-  if(novaPartida&&jogoAtual.subs&&jogoAtual.subs.length>0){
-    const{data:movRecente}=await db.from('caixa').select('*').eq('data',dataJogo).like('descricao','%substituto%').order('criado_em',{ascending:false}).limit(1);
-    if(movRecente&&movRecente.length>0){
-      await db.from('caixa').update({descricao:`${jogoAtual.subs.length} substituto(s) — ${dataJogo} [partida:${novaPartida.id}]`}).eq('id',movRecente[0].id);
-      await carregarMovimentos();
-    }
+  // Adicionar 3€ por cada substituto nas equipas à caixa
+  if(novaPartida&&subsNasEquipas.length>0){
+    const totalSubs=subsNasEquipas.length*3;
+    const descricao=`${subsNasEquipas.length} substituto(s) — ${dataJogo} [partida:${novaPartida.id}]`;
+    await db.from('caixa').insert({descricao,valor:totalSubs,data:dataJogo});
+    await carregarMovimentos();
   }
   const gA=partida.golosA,gB=partida.golosB,vitA=gA>gB,vitB=gB>gA,emp=gA===gB;
   for(const j of [...partida.equipaA,...partida.equipaB]){
