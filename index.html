@@ -926,6 +926,27 @@ async function terminarPartida() {
       }
     }
   }
+  // Atualizar sequências de vitórias
+  const gA2=partida.golosA,gB2=partida.golosB,vitA2=gA2>gB2,vitB2=gB2>gA2,emp2=gA2===gB2;
+  for(const j of [...partida.equipaA,...partida.equipaB]){
+    const isA2=partida.equipaA.some(x=>(x.id||x.nome)===(j.id||j.nome));
+    const ganhou=isA2?vitA2:vitB2;
+    if(j.id){
+      const{data:est}=await db.from('estatisticas_jogadores').select('sequencia_atual,melhor_sequencia').eq('jogador_id',j.id).maybeSingle();
+      if(est){
+        const novaSeq=ganhou?(est.sequencia_atual||0)+1:0;
+        const melhorSeq=Math.max(est.melhor_sequencia||0,novaSeq);
+        await db.from('estatisticas_jogadores').update({sequencia_atual:novaSeq,melhor_sequencia:melhorSeq}).eq('jogador_id',j.id);
+      }
+    } else {
+      const{data:sub}=await db.from('substitutos').select('sequencia_atual,melhor_sequencia').eq('nome',j.nome).maybeSingle();
+      if(sub){
+        const novaSeq=ganhou?(sub.sequencia_atual||0)+1:0;
+        const melhorSeq=Math.max(sub.melhor_sequencia||0,novaSeq);
+        await db.from('substitutos').update({sequencia_atual:novaSeq,melhor_sequencia:melhorSeq}).eq('id',sub.id);
+      }
+    }
+  }
   // Guardar dados para partilha
   sharePartidaData={golosA:partida.golosA,golosB:partida.golosB,marcadores:marcArr,data:dataJogo,eqA:partida.equipaA.map(j=>j.nome),eqB:partida.equipaB.map(j=>j.nome)};
   document.getElementById('score-setup').style.display='block';
@@ -1027,26 +1048,6 @@ async function guardarSubs(){
     await db.from('substitutos').update({rating:subStars}).eq('id',existente.id);
   }
   await carregarSubstitutos();
-  // Atualizar sequências
-  for(const j of [...partida.equipaA,...partida.equipaB]){
-    const isA=partida.equipaA.some(x=>(x.id||x.nome)===(j.id||j.nome));
-    const ganhou=isA?vitA:vitB;
-    if(j.id){
-      const{data:est}=await db.from('estatisticas_jogadores').select('*').eq('jogador_id',j.id).maybeSingle();
-      if(est){
-        const novaSeq=ganhou?(est.sequencia_atual||0)+1:0;
-        const melhorSeq=Math.max(est.melhor_sequencia||0,novaSeq);
-        await db.from('estatisticas_jogadores').update({sequencia_atual:novaSeq,melhor_sequencia:melhorSeq}).eq('jogador_id',j.id);
-      }
-    } else {
-      const{data:sub}=await db.from('substitutos').select('*').eq('nome',j.nome).maybeSingle();
-      if(sub){
-        const novaSeq=ganhou?(sub.sequencia_atual||0)+1:0;
-        const melhorSeq=Math.max(sub.melhor_sequencia||0,novaSeq);
-        await db.from('substitutos').update({sequencia_atual:novaSeq,melhor_sequencia:melhorSeq}).eq('id',sub.id);
-      }
-    }
-  }
   await renderDash();
   fecharModal('modal-subs');renderJogo();
 }
@@ -1741,7 +1742,7 @@ async function abrirCartao(id, nome, isSub) {
   const empates = est?.empates || 0;
   const derrotas = est?.derrotas || 0;
   const pontos = vitorias * 3 + empates;
-  const taxaVit = jogos > 0 ? Math.round((vitorias / jogos) * 100) : 0;
+  const taxaVit = jogos > 0 ? Math.min(100, Math.round((vitorias / jogos) * 100)) : 0;
   const rating = est?.rating || (isSub ? 3 : jogadores.find(j => j.id === id)?.rating || 3);
 
   const subBadge = (isSub || !id) ? '<span style="font-size:11px;background:#2a2a3a;color:#8888cc;border-radius:4px;padding:2px 8px;margin-left:8px">substituto</span>' : '';
@@ -1809,7 +1810,7 @@ async function partilharCartao() {
 
   const jogos = est?.jogos || 0, vitorias = est?.vitorias || 0, empates = est?.empates || 0, derrotas = est?.derrotas || 0;
   const pontos = vitorias * 3 + empates;
-  const taxaVit = jogos > 0 ? Math.round((vitorias / jogos) * 100) : 0;
+  const taxaVit = jogos > 0 ? Math.min(100, Math.round((vitorias / jogos) * 100)) : 0;
   const melhorSeq = est?.melhor_sequencia || 0;
   const rating = est?.rating || 3;
 
