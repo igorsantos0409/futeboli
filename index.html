@@ -87,6 +87,116 @@ function subscreverJogoLive() {
     .subscribe();
 }
 
+
+// ── RECALCULAR ESTATÍSTICAS ──
+async function recalcularStats() {
+  if (!confirm('Isto vai apagar e recalcular todas as estatísticas a partir do histórico.\nTens a certeza?')) return;
+
+  // 1. Limpar stats
+  await db.from('estatisticas_jogadores').delete().neq('jogador_id', '00000000-0000-0000-0000-000000000000');
+  await db.from('substitutos').update({jogos:0,vitorias:0,derrotas:0,empates:0,golos:0,sequencia_atual:0,melhor_sequencia:0});
+
+  // 2. Buscar todas as partidas ordenadas por data
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*').order('criado_em', { ascending: true });
+  if (!partidas || partidas.length === 0) { alert('Sem partidas para recalcular.'); return; }
+
+  // 3. Para cada partida, calcular e acumular stats
+  // Guardar sequência actual por jogador
+  const seqActual = {};
+
+  for (const p of partidas) {
+    const gA = p.golos_a, gB = p.golos_b;
+    const vitA = gA > gB, vitB = gB > gA, emp = gA === gB;
+    const eqA = p.equipa_a?.jogadores || [];
+    const eqB = p.equipa_b?.jogadores || [];
+    const marcadores = p.marcadores || [];
+
+    for (const j of [...eqA, ...eqB]) {
+      const isA = eqA.some(x => x.nome === j.nome);
+      const ganhou = isA ? vitA : vitB;
+      const golosJ = marcadores.find(m => m.nome === j.nome)?.golos || 0;
+
+      if (j.id) {
+        // Jogador fixo
+        const { data: est } = await db.from('estatisticas_jogadores').select('*').eq('jogador_id', j.id).maybeSingle();
+        const novaSeq = ganhou ? (seqActual[j.id] || 0) + 1 : 0;
+        seqActual[j.id] = novaSeq;
+        if (est) {
+          const melhorSeq = Math.max(est.melhor_sequencia || 0, novaSeq);
+          await db.from('estatisticas_jogadores').update({
+            golos: est.golos + golosJ,
+            jogos: est.jogos + 1,
+            vitorias: est.vitorias + (ganhou ? 1 : 0),
+            derrotas: est.derrotas + (!ganhou && !emp ? 1 : 0),
+            empates: est.empates + (emp ? 1 : 0),
+            sequencia_atual: novaSeq,
+            melhor_sequencia: melhorSeq
+          }).eq('jogador_id', j.id);
+        } else {
+          const melhorSeq = novaSeq;
+          await db.from('estatisticas_jogadores').insert({
+            jogador_id: j.id,
+            golos: golosJ, jogos: 1,
+            vitorias: ganhou ? 1 : 0,
+            derrotas: !ganhou && !emp ? 1 : 0,
+            empates: emp ? 1 : 0,
+            sequencia_atual: novaSeq,
+            melhor_sequencia: melhorSeq
+          });
+        }
+      } else {
+        // Substituto
+        const { data: sub } = await db.from('substitutos').select('*').eq('nome', j.nome).maybeSingle();
+        const key = 'sub_' + j.nome;
+        const novaSeq = ganhou ? (seqActual[key] || 0) + 1 : 0;
+        seqActual[key] = novaSeq;
+        if (sub) {
+          const melhorSeq = Math.max(sub.melhor_sequencia || 0, novaSeq);
+          await db.from('substitutos').update({
+            golos: sub.golos + golosJ,
+            jogos: sub.jogos + 1,
+            vitorias: sub.vitorias + (ganhou ? 1 : 0),
+            derrotas: sub.derrotas + (!ganhou && !emp ? 1 : 0),
+            empates: sub.empates + (emp ? 1 : 0),
+            sequencia_atual: novaSeq,
+            melhor_sequencia: melhorSeq
+          }).eq('id', sub.id);
+        } else {
+          // Criar substituto se não existe
+          await db.from('substitutos').insert({
+            nome: j.nome, rating: 3,
+            golos: golosJ, jogos: 1,
+            vitorias: ganhou ? 1 : 0,
+            derrotas: !ganhou && !emp ? 1 : 0,
+            empates: emp ? 1 : 0,
+            sequencia_atual: novaSeq,
+            melhor_sequencia: novaSeq
+          });
+        }
+      }
+    }
+  }
+
+  // 4. Recalcular caixa a partir das partidas (1 sub = 3€)
+  await db.from('caixa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  for (const p of partidas) {
+    const eqA = p.equipa_a?.jogadores || [];
+    const eqB = p.equipa_b?.jogadores || [];
+    const subs = [...eqA, ...eqB].filter(j => !j.id);
+    if (subs.length > 0) {
+      await db.from('caixa').insert({
+        descricao: `${subs.length} substituto(s) — ${p.data} [partida:${p.id}]`,
+        valor: subs.length * 3,
+        data: p.data
+      });
+    }
+  }
+
+  await Promise.all([carregarJogadores(), carregarMovimentos(), carregarSubstitutos()]);
+  renderDash(); renderCaixa();
+  alert('Estatísticas e caixa recalculadas com sucesso! ✓');
+}
+
 </script>
 <style>
 :root {
@@ -478,6 +588,11 @@ body{font-family:-apple-system,'Helvetica Neue',sans-serif;background:var(--fund
     <div class="card" style="margin-top:4px">
       <div class="card-title">🤝 Parceiros frequentes</div>
       <div id="stats-parceiros"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+    <div class="card" style="margin-top:4px">
+      <div class="card-title">🔄 Recalcular estatísticas</div>
+      <p style="font-size:13px;color:var(--texto2);margin-bottom:12px">Recalcula todas as estatísticas a partir do histórico real de partidas. Usa isto se os dados ficaram errados.</p>
+      <button class="btn btn-laranja btn-full" onclick="recalcularStats()">🔄 Recalcular tudo</button>
     </div>
     <div class="card" style="margin-top:4px">
       <div class="card-title">💾 Backup de dados</div>
@@ -2091,6 +2206,116 @@ function subscreverJogoLive() {
       renderScoreLive();
     })
     .subscribe();
+}
+
+
+// ── RECALCULAR ESTATÍSTICAS ──
+async function recalcularStats() {
+  if (!confirm('Isto vai apagar e recalcular todas as estatísticas a partir do histórico.\nTens a certeza?')) return;
+
+  // 1. Limpar stats
+  await db.from('estatisticas_jogadores').delete().neq('jogador_id', '00000000-0000-0000-0000-000000000000');
+  await db.from('substitutos').update({jogos:0,vitorias:0,derrotas:0,empates:0,golos:0,sequencia_atual:0,melhor_sequencia:0});
+
+  // 2. Buscar todas as partidas ordenadas por data
+  const { data: partidas } = await db.from('jogos_scoreboard').select('*').order('criado_em', { ascending: true });
+  if (!partidas || partidas.length === 0) { alert('Sem partidas para recalcular.'); return; }
+
+  // 3. Para cada partida, calcular e acumular stats
+  // Guardar sequência actual por jogador
+  const seqActual = {};
+
+  for (const p of partidas) {
+    const gA = p.golos_a, gB = p.golos_b;
+    const vitA = gA > gB, vitB = gB > gA, emp = gA === gB;
+    const eqA = p.equipa_a?.jogadores || [];
+    const eqB = p.equipa_b?.jogadores || [];
+    const marcadores = p.marcadores || [];
+
+    for (const j of [...eqA, ...eqB]) {
+      const isA = eqA.some(x => x.nome === j.nome);
+      const ganhou = isA ? vitA : vitB;
+      const golosJ = marcadores.find(m => m.nome === j.nome)?.golos || 0;
+
+      if (j.id) {
+        // Jogador fixo
+        const { data: est } = await db.from('estatisticas_jogadores').select('*').eq('jogador_id', j.id).maybeSingle();
+        const novaSeq = ganhou ? (seqActual[j.id] || 0) + 1 : 0;
+        seqActual[j.id] = novaSeq;
+        if (est) {
+          const melhorSeq = Math.max(est.melhor_sequencia || 0, novaSeq);
+          await db.from('estatisticas_jogadores').update({
+            golos: est.golos + golosJ,
+            jogos: est.jogos + 1,
+            vitorias: est.vitorias + (ganhou ? 1 : 0),
+            derrotas: est.derrotas + (!ganhou && !emp ? 1 : 0),
+            empates: est.empates + (emp ? 1 : 0),
+            sequencia_atual: novaSeq,
+            melhor_sequencia: melhorSeq
+          }).eq('jogador_id', j.id);
+        } else {
+          const melhorSeq = novaSeq;
+          await db.from('estatisticas_jogadores').insert({
+            jogador_id: j.id,
+            golos: golosJ, jogos: 1,
+            vitorias: ganhou ? 1 : 0,
+            derrotas: !ganhou && !emp ? 1 : 0,
+            empates: emp ? 1 : 0,
+            sequencia_atual: novaSeq,
+            melhor_sequencia: melhorSeq
+          });
+        }
+      } else {
+        // Substituto
+        const { data: sub } = await db.from('substitutos').select('*').eq('nome', j.nome).maybeSingle();
+        const key = 'sub_' + j.nome;
+        const novaSeq = ganhou ? (seqActual[key] || 0) + 1 : 0;
+        seqActual[key] = novaSeq;
+        if (sub) {
+          const melhorSeq = Math.max(sub.melhor_sequencia || 0, novaSeq);
+          await db.from('substitutos').update({
+            golos: sub.golos + golosJ,
+            jogos: sub.jogos + 1,
+            vitorias: sub.vitorias + (ganhou ? 1 : 0),
+            derrotas: sub.derrotas + (!ganhou && !emp ? 1 : 0),
+            empates: sub.empates + (emp ? 1 : 0),
+            sequencia_atual: novaSeq,
+            melhor_sequencia: melhorSeq
+          }).eq('id', sub.id);
+        } else {
+          // Criar substituto se não existe
+          await db.from('substitutos').insert({
+            nome: j.nome, rating: 3,
+            golos: golosJ, jogos: 1,
+            vitorias: ganhou ? 1 : 0,
+            derrotas: !ganhou && !emp ? 1 : 0,
+            empates: emp ? 1 : 0,
+            sequencia_atual: novaSeq,
+            melhor_sequencia: novaSeq
+          });
+        }
+      }
+    }
+  }
+
+  // 4. Recalcular caixa a partir das partidas (1 sub = 3€)
+  await db.from('caixa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  for (const p of partidas) {
+    const eqA = p.equipa_a?.jogadores || [];
+    const eqB = p.equipa_b?.jogadores || [];
+    const subs = [...eqA, ...eqB].filter(j => !j.id);
+    if (subs.length > 0) {
+      await db.from('caixa').insert({
+        descricao: `${subs.length} substituto(s) — ${p.data} [partida:${p.id}]`,
+        valor: subs.length * 3,
+        data: p.data
+      });
+    }
+  }
+
+  await Promise.all([carregarJogadores(), carregarMovimentos(), carregarSubstitutos()]);
+  renderDash(); renderCaixa();
+  alert('Estatísticas e caixa recalculadas com sucesso! ✓');
 }
 
 </script>
