@@ -1505,18 +1505,17 @@ async function partilharTabela(){
 
 // ── PARTILHA RESUMO SEMANA ──
 async function partilharResumoSemana(){
-  const[{data:partidas},{data:fixos},{data:subs}]=await Promise.all([
-    db.from('jogos_scoreboard').select('*').order('criado_em',{ascending:false}).limit(1),
-    db.from('estatisticas_jogadores').select('*, jogadores(nome)').order('golos',{ascending:false}).limit(1),
-    db.from('substitutos').select('*').gt('golos',0).order('golos',{ascending:false}).limit(1)
+  const[{data:partidas}]=await Promise.all([
+    db.from('jogos_scoreboard').select('*').order('criado_em',{ascending:false}).limit(1)
   ]);
   const ultima=partidas?.[0];
   if(!ultima){alert('Sem partidas ainda.');return;}
-  // MVP
-  const mvpFixo=fixos?.[0],mvpSub=subs?.[0];
+  // MVP — melhor marcador da última partida
   let mvpNome='—';
-  if((mvpSub?.golos||0)>(mvpFixo?.golos||0)) mvpNome=mvpSub.nome;
-  else if(mvpFixo?.golos>0) mvpNome=mvpFixo.jogadores?.nome||'?';
+  if(ultima.marcadores&&ultima.marcadores.length>0){
+    const melhor=[...ultima.marcadores].sort((a,b)=>b.golos-a.golos)[0];
+    if(melhor&&melhor.golos>0) mvpNome=melhor.nome;
+  }
   // Hat-trick desta partida
   const hats=(ultima.marcadores||[]).filter(m=>m.golos>=3);
   const d=new Date(ultima.data+'T12:00:00').toLocaleDateString('pt-PT',{weekday:'long',day:'numeric',month:'long'});
